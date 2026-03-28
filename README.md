@@ -23,3 +23,5 @@ Set `NEXT_PUBLIC_API_URL=http://localhost:8000` in `apps/web/.env.local` so the 
 ## License
 
 See [LICENSE](LICENSE).
+
+hello
