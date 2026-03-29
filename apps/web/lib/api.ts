@@ -1,8 +1,14 @@
 import type {
+  AuthSession,
+  AuthUser,
   ApplicabilityCheckRequest,
   ApplicabilityCheckResponse,
   LawApiRecord,
+  LoginRequest,
+  LoginResponse,
   RiskLevel,
+  SignUpRequest,
+  SignUpResponse,
 } from "@/types";
 
 const DEFAULT_TIMEOUT_MS = 12000;
@@ -28,7 +34,7 @@ export class ApiError extends Error {
 }
 
 function getBaseUrl(): string {
-  const url = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const url = process.env.NEXT_PUBLIC_API_URL ?? "/api";
   return url.replace(/\/$/, "");
 }
 
@@ -64,6 +70,25 @@ async function parseResponseBody(res: Response): Promise<unknown> {
   const text = await res.text();
   if (!text.trim()) {
     return null;
+  }
+
+  const contentType = res.headers.get("content-type") ?? "";
+  const looksJson =
+    contentType.includes("application/json") ||
+    contentType.includes("+json") ||
+    text.trim().startsWith("{") ||
+    text.trim().startsWith("[");
+
+  if (!looksJson) {
+    if (res.ok) {
+      throw new ApiError("The server returned an unreadable response.", {
+        status: res.status,
+        code: "PARSE",
+        retryable: false,
+      });
+    }
+
+    return text.trim();
   }
 
   try {
@@ -166,6 +191,88 @@ function normalizeLawsResponse(payload: unknown): LawApiRecord[] {
     });
 }
 
+function normalizeAuthUser(value: unknown): AuthUser | null {
+  const record = asRecord(value);
+  if (!record) {
+    return null;
+  }
+
+  return {
+    id: typeof record.id === "string" ? record.id : null,
+    email: typeof record.email === "string" ? record.email : null,
+    role: typeof record.role === "string" ? record.role : null,
+    created_at: typeof record.created_at === "string" ? record.created_at : null,
+    last_sign_in_at:
+      typeof record.last_sign_in_at === "string" ? record.last_sign_in_at : null,
+    email_confirmed_at:
+      typeof record.email_confirmed_at === "string" ? record.email_confirmed_at : null,
+  };
+}
+
+function normalizeAuthSession(value: unknown): AuthSession | null {
+  const record = asRecord(value);
+  if (!record) {
+    return null;
+  }
+
+  return {
+    access_token: typeof record.access_token === "string" ? record.access_token : null,
+    refresh_token: typeof record.refresh_token === "string" ? record.refresh_token : null,
+    expires_in: typeof record.expires_in === "number" ? record.expires_in : null,
+    expires_at: typeof record.expires_at === "number" ? record.expires_at : null,
+    token_type: typeof record.token_type === "string" ? record.token_type : null,
+  };
+}
+
+function normalizeLoginResponse(payload: unknown): LoginResponse {
+  const record = asRecord(payload);
+  if (!record) {
+    throw new ApiError("The login response was incomplete.", {
+      code: "INVALID_RESPONSE",
+      retryable: true,
+    });
+  }
+
+  const normalized = {
+    success: typeof record.success === "boolean" ? record.success : true,
+    message: sanitizeText(record.message, "Login successful."),
+    user: normalizeAuthUser(record.user),
+    session: normalizeAuthSession(record.session),
+  };
+
+  if (
+    normalized.success &&
+    (!normalized.user || !normalized.session || !normalized.session.access_token)
+  ) {
+    throw new ApiError("The authentication response was incomplete.", {
+      code: "INVALID_RESPONSE",
+      retryable: true,
+    });
+  }
+
+  return normalized;
+}
+
+function normalizeSignupResponse(payload: unknown): SignUpResponse {
+  const record = asRecord(payload);
+  if (!record) {
+    throw new ApiError("The signup response was incomplete.", {
+      code: "INVALID_RESPONSE",
+      retryable: true,
+    });
+  }
+
+  return {
+    success: typeof record.success === "boolean" ? record.success : true,
+    message: sanitizeText(
+      record.message,
+      "Account created. Confirm your email address before signing in."
+    ),
+    user: normalizeAuthUser(record.user),
+    session: normalizeAuthSession(record.session),
+  };
+}
+
 function toApiError(error: unknown): ApiError {
   if (error instanceof ApiError) {
     return error;
@@ -227,11 +334,15 @@ export function getApiErrorMessage(error: unknown, fallback: string) {
   }
 
   if (apiError.code === "PARSE" || apiError.code === "INVALID_RESPONSE") {
-    return "The server returned incomplete assessment data.";
+    return apiError.message || fallback;
   }
 
   if (apiError.code === "NETWORK") {
     return "The API is unavailable right now. Please try again.";
+  }
+
+  if (apiError.code === "HTTP" && apiError.status && apiError.status >= 500) {
+    return "The authentication service is unavailable right now. Please try again.";
   }
 
   return apiError.message || fallback;
@@ -256,4 +367,22 @@ export async function getLaws(): Promise<LawApiRecord[]> {
 export async function getLawById(lawId: string): Promise<LawApiRecord | null> {
   const laws = await getLaws();
   return laws.find((law) => law.id === lawId) ?? null;
+}
+
+export async function login(body: LoginRequest): Promise<LoginResponse> {
+  const response = await request("/auth/login", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+
+  return normalizeLoginResponse(response);
+}
+
+export async function signup(body: SignUpRequest): Promise<SignUpResponse> {
+  const response = await request("/auth/signup", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+
+  return normalizeSignupResponse(response);
 }

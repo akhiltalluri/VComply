@@ -1,3 +1,4 @@
+import { StartAssessmentButton } from "@/components/auth/StartAssessmentButton";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -183,9 +184,10 @@ export default function HomePage() {
             </p>
 
             <div className="flex w-full flex-col items-center justify-center gap-4 pt-2 sm:flex-row">
-              <Button href="/intake" size="lg" className="w-full max-w-[320px] text-base sm:min-w-[240px] sm:text-lg">
-                Start Assessment
-              </Button>
+              <StartAssessmentButton
+                size="lg"
+                className="w-full max-w-[320px] text-base sm:min-w-[240px] sm:text-lg"
+              />
               <Button
                 href="/laws"
                 variant="secondary"
@@ -199,6 +201,9 @@ export default function HomePage() {
             <p className="mx-auto max-w-2xl text-sm leading-6 text-slate-400">
               Start with a short intake. VComply then identifies likely regulations, surfaces the
               highest-risk gaps, and turns them into a concrete compliance action plan.
+            </p>
+            <p className="mx-auto max-w-2xl text-sm leading-6 text-slate-500">
+              Sign in to start your compliance assessment and access the workspace.
             </p>
           </div>
 

@@ -13,13 +13,16 @@ import { CheckboxField } from "@/components/ui/CheckboxField";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { StatePanel } from "@/components/ui/StatePanel";
 import { TextArea } from "@/components/ui/TextArea";
 import { checkApplicability, getApiErrorMessage } from "@/lib/api";
+import { useAuthState } from "@/lib/auth";
 import {
   createAssessmentFromIntake,
   modelCategories,
   normalizeComplianceAssessment,
 } from "@/lib/mock-data";
+import { parseStoredJson } from "@/lib/storage";
 import type { IntakeDraft } from "@/lib/mock-data";
 
 const steps = [
@@ -95,6 +98,7 @@ function parseStoredDataProvenance(value: string) {
 
 export default function IntakePage() {
   const router = useRouter();
+  const { authenticated, ready: authReady } = useAuthState();
   const [currentStep, setCurrentStep] = useState(1);
   const [showValidation, setShowValidation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -152,15 +156,25 @@ export default function IntakePage() {
   );
 
   useEffect(() => {
-    try {
-      const storedDraft = localStorage.getItem("complianceIntakeDraft");
+    if (!authReady) {
+      return;
+    }
 
-      if (!storedDraft) {
+    if (!authenticated) {
+      router.replace("/login");
+    }
+  }, [authReady, authenticated, router]);
+
+  useEffect(() => {
+    try {
+      const parsed = parseStoredJson<Partial<IntakeDraft>>(
+        localStorage.getItem("complianceIntakeDraft")
+      );
+
+      if (!parsed) {
         setDraftReady(true);
         return;
       }
-
-      const parsed = JSON.parse(storedDraft) as Partial<IntakeDraft>;
 
       setCompanyName(typeof parsed.company_name === "string" ? parsed.company_name : "");
       setIndustry(typeof parsed.industry === "string" ? parsed.industry : "");
@@ -242,6 +256,22 @@ export default function IntakePage() {
     }
 
     return {};
+  }
+
+  if (!authReady || !authenticated) {
+    return (
+      <PageContainer className="flex min-h-[60vh] items-center pb-20 pt-10">
+        <StatePanel
+          title="Loading compliance workspace"
+          description="Confirming access before opening the assessment flow."
+          tone="info"
+          icon={
+            <span className="h-5 w-5 animate-spin rounded-full border-2 border-slate-700 border-t-blue-400" />
+          }
+          className="mx-auto max-w-2xl"
+        />
+      </PageContainer>
+    );
   }
 
   const stepErrors = getStepErrors(currentStep);

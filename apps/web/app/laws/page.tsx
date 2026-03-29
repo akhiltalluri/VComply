@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { FilterSidebar } from "@/components/laws/FilterSidebar";
@@ -14,12 +15,14 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatePanel } from "@/components/ui/StatePanel";
 import { Button } from "@/components/ui/Button";
 import { getApiErrorMessage, getLaws } from "@/lib/api";
+import { useAuthState } from "@/lib/auth";
 import {
   buildLawApplicabilityExplanation,
   hydrateLawRecords,
   lawFilterOptions,
   lawsData,
 } from "@/lib/mock-data";
+import { parseStoredJson } from "@/lib/storage";
 import type { IntakeDraft, LawRecord } from "@/lib/mock-data";
 
 type SortMode = "risk" | "jurisdiction" | "name";
@@ -38,6 +41,8 @@ function riskOrder(risk: string) {
 }
 
 export default function LawsPage() {
+  const router = useRouter();
+  const { authenticated, ready: authReady } = useAuthState();
   const [pageState, setPageState] = useState<LawsPageState>("loading");
   const [lawsCatalog, setLawsCatalog] = useState<LawRecord[]>([]);
   const [fetchError, setFetchError] = useState("");
@@ -67,16 +72,16 @@ export default function LawsPage() {
   const [sortMode, setSortMode] = useState<SortMode>("risk");
 
   useEffect(() => {
-    try {
-      const storedDraft = localStorage.getItem("complianceIntakeDraft");
-      if (!storedDraft) {
-        return;
-      }
+    const storedDraft = parseStoredJson<IntakeDraft>(
+      localStorage.getItem("complianceIntakeDraft")
+    );
 
-      setIntakeDraft(JSON.parse(storedDraft) as IntakeDraft);
-    } catch {
+    if (!storedDraft) {
       setIntakeDraft(null);
+      return;
     }
+
+    setIntakeDraft(storedDraft);
   }, []);
 
   const loadLaws = useCallback(async () => {
@@ -115,8 +120,17 @@ export default function LawsPage() {
   }, []);
 
   useEffect(() => {
+    if (!authReady) {
+      return;
+    }
+
+    if (!authenticated) {
+      router.replace("/login");
+      return;
+    }
+
     void loadLaws();
-  }, [loadLaws]);
+  }, [authReady, authenticated, loadLaws, router]);
 
   function toggleItem(current: string[], value: string) {
     return current.includes(value) ? current.filter((item) => item !== value) : [...current, value];
@@ -270,12 +284,12 @@ export default function LawsPage() {
     setSelectedCategories([]);
   }
 
-  if (pageState === "loading") {
+  if (!authReady || !authenticated || pageState === "loading") {
     return (
       <PageContainer className="flex min-h-[60vh] items-center pb-16 pt-8">
         <StatePanel
-          title="Loading regulations"
-          description="Preparing the current regulatory catalog and associated law detail workspace."
+          title="Loading regulatory workspace"
+          description="Confirming access and preparing the current regulation catalog."
           tone="info"
           icon={
             <span className="h-5 w-5 animate-spin rounded-full border-2 border-slate-700 border-t-blue-400" />

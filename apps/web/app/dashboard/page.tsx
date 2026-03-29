@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { ActionList } from "@/components/dashboard/ActionList";
 import { DashboardSummaryStats } from "@/components/dashboard/DashboardSummaryStats";
@@ -14,6 +15,8 @@ import { Card } from "@/components/ui/Card";
 import { InsetPanel } from "@/components/ui/InsetPanel";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatePanel } from "@/components/ui/StatePanel";
+import { useAuthState } from "@/lib/auth";
+import { parseStoredJson } from "@/lib/storage";
 import type { ComplianceAssessment, IntakeDraft, RiskLevel } from "@/lib/mock-data";
 import {
   createAssessmentFromIntake,
@@ -65,21 +68,27 @@ function summaryTone(risk: RiskLevel): { label: string; tone: RiskLevel } {
 type DashboardState = "loading" | "ready" | "empty" | "error";
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const { authenticated, ready: authReady } = useAuthState();
   const [assessment, setAssessment] = useState<ComplianceAssessment>(defaultAssessment);
   const [state, setState] = useState<DashboardState>("loading");
   const [showGeneratedSummary, setShowGeneratedSummary] = useState(false);
   const [assessmentNotice, setAssessmentNotice] = useState("");
 
   useEffect(() => {
-    const stored = localStorage.getItem("complianceResult");
-    const storedDraft = localStorage.getItem("complianceIntakeDraft");
-    let intakeDraft: IntakeDraft | null = null;
-
-    try {
-      intakeDraft = storedDraft ? (JSON.parse(storedDraft) as IntakeDraft) : null;
-    } catch {
-      intakeDraft = null;
+    if (!authReady) {
+      return;
     }
+
+    if (!authenticated) {
+      router.replace("/login");
+      return;
+    }
+
+    const stored = localStorage.getItem("complianceResult");
+    const intakeDraft = parseStoredJson<IntakeDraft>(
+      localStorage.getItem("complianceIntakeDraft")
+    );
 
     try {
       if (!stored) {
@@ -96,7 +105,10 @@ export default function DashboardPage() {
         return;
       }
 
-      const normalized = normalizeComplianceAssessment(JSON.parse(stored), intakeDraft);
+      const storedAssessment = parseStoredJson<unknown>(stored);
+      const normalized = storedAssessment
+        ? normalizeComplianceAssessment(storedAssessment, intakeDraft)
+        : null;
       if (!normalized) {
         if (intakeDraft) {
           setAssessment(createAssessmentFromIntake(intakeDraft));
@@ -130,7 +142,7 @@ export default function DashboardPage() {
 
       setState("error");
     }
-  }, []);
+  }, [authReady, authenticated, router]);
 
   function loadSampleAssessment() {
     localStorage.setItem("complianceResult", JSON.stringify(defaultAssessment));
@@ -163,7 +175,7 @@ export default function DashboardPage() {
     [assessment]
   );
 
-  if (state === "loading") {
+  if (!authReady || !authenticated || state === "loading") {
     return (
       <PageContainer className="flex min-h-[60vh] items-center pb-20 pt-10">
         <StatePanel

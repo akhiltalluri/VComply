@@ -5,7 +5,7 @@ Extend with middleware, CORS tightening, and auth when you graduate from MVP.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import applicability, health, laws
+from app.api.routes import applicability, auth, health, laws
 
 app = FastAPI(title="VComply API", version="0.1.0")
 
@@ -18,6 +18,7 @@ app.add_middleware(
 )
 
 app.include_router(health.router, tags=["health"])
+app.include_router(auth.router)
 app.include_router(applicability.router, prefix="/applicability", tags=["applicability"])
 app.include_router(laws.router, prefix="/laws", tags=["laws"])
 

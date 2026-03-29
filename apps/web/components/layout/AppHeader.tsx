@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { StartAssessmentButton } from "@/components/auth/StartAssessmentButton";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { NavLink } from "@/components/layout/NavLink";
+import { clearAuthState, useAuthState } from "@/lib/auth";
 import { BrandMark } from "@/components/ui/BrandMark";
 import { Button } from "@/components/ui/Button";
 
@@ -17,8 +19,17 @@ function ArrowLeftIcon() {
 
 export function AppHeader() {
   const pathname = usePathname();
+  const router = useRouter();
   const isLanding = pathname === "/";
   const isAssessment = pathname.startsWith("/intake");
+  const isAuthRoute = pathname === "/login" || pathname === "/signup";
+  const { authenticated: signedIn, user } = useAuthState();
+  const userEmail = user?.email ?? "";
+
+  function handleLogout() {
+    clearAuthState();
+    router.push("/login");
+  }
 
   if (isAssessment) {
     return (
@@ -55,13 +66,66 @@ export function AppHeader() {
               <a href="#workflow" className="transition hover:text-white">
                 Workflow
               </a>
-              <a href="#preview" className="transition hover:text-white">
-                Platform
-              </a>
             </nav>
-            <Button href="/intake" variant="primary" size="md">
-              Start Assessment
-            </Button>
+            {signedIn ? (
+              <>
+                <div className="hidden rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-slate-300 md:block">
+                  {userEmail || "Signed in"}
+                </div>
+                <Button href="/dashboard" variant="secondary" size="md">
+                  Dashboard
+                </Button>
+                <Button onClick={handleLogout} variant="ghost" size="md">
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button href="/login" variant="secondary" size="md">
+                  Sign in
+                </Button>
+                <StartAssessmentButton size="md" />
+              </>
+            )}
+          </div>
+        </PageContainer>
+      </header>
+    );
+  }
+
+  if (isAuthRoute) {
+    return (
+      <header className="sticky top-0 z-40 border-b border-white/8 bg-slate-950/92 backdrop-blur-xl">
+        <PageContainer className="flex items-center justify-between py-4">
+          <Link href="/" className="inline-flex items-center gap-4">
+            <BrandMark />
+            <span className="text-[1.55rem] font-semibold tracking-tight text-white sm:text-[2rem]">
+              VComply
+            </span>
+          </Link>
+
+          <div className="flex items-center gap-3">
+            {signedIn ? (
+              <>
+                <Button href="/dashboard" variant="secondary" size="md">
+                  Dashboard
+                </Button>
+                <Button onClick={handleLogout} variant="ghost" size="md">
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                {pathname === "/login" ? (
+                  <Button href="/signup" variant="secondary" size="md">
+                    Create account
+                  </Button>
+                ) : null}
+                <Button href="/" variant="ghost" size="md">
+                  Back to home
+                </Button>
+              </>
+            )}
           </div>
         </PageContainer>
       </header>
@@ -98,9 +162,31 @@ export function AppHeader() {
             })}
           </nav>
 
-          <Button href="/intake" variant="primary" size="md" className="text-sm sm:text-lg">
-            New Assessment
-          </Button>
+          <div className="flex items-center gap-3">
+            {signedIn && userEmail ? (
+              <div className="hidden rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-slate-300 lg:block">
+                {userEmail}
+              </div>
+            ) : null}
+
+            <Button
+              href={signedIn ? "/intake" : "/login"}
+              variant="primary"
+              size="md"
+              className="text-sm sm:text-lg"
+            >
+              New Assessment
+            </Button>
+            {signedIn ? (
+              <Button onClick={handleLogout} variant="ghost" size="md">
+                Logout
+              </Button>
+            ) : (
+              <Button href="/login" variant="secondary" size="md">
+                Sign in
+              </Button>
+            )}
+          </div>
         </div>
       </PageContainer>
     </header>

@@ -5,6 +5,16 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Monorepo: trace files from repo root (avoids picking a parent lockfile as root)
   outputFileTracingRoot: path.join(__dirname, "../.."),
+  async rewrites() {
+    const backendUrl = (process.env.BACKEND_API_URL ?? "http://localhost:8001").replace(/\/$/, "");
+
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${backendUrl}/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

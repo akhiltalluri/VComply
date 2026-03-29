@@ -161,6 +161,47 @@ export type ApplicabilityCheckResponse = {
   risk_score: number;
 };
 
+export type LoginRequest = {
+  email: string;
+  password: string;
+};
+
+export type SignUpRequest = {
+  email: string;
+  password: string;
+};
+
+export type AuthUser = {
+  id?: string | null;
+  email?: string | null;
+  role?: string | null;
+  created_at?: string | null;
+  last_sign_in_at?: string | null;
+  email_confirmed_at?: string | null;
+};
+
+export type AuthSession = {
+  access_token?: string | null;
+  refresh_token?: string | null;
+  expires_in?: number | null;
+  expires_at?: number | null;
+  token_type?: string | null;
+};
+
+export type LoginResponse = {
+  success: boolean;
+  message: string;
+  user: AuthUser | null;
+  session: AuthSession | null;
+};
+
+export type SignUpResponse = {
+  success: boolean;
+  message: string;
+  user: AuthUser | null;
+  session: AuthSession | null;
+};
+
 export type LawApiRecord = {
   id?: string;
   name?: string;
