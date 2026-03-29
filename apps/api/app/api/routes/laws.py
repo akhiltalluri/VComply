@@ -9,6 +9,7 @@ from app.db import get_optional_db
 from app.services.law_service import (
     fetch_live_congress_laws,
     get_congress_laws_freshness,
+    get_sample_congress_laws,
     list_congress_laws,
 )
 
@@ -55,6 +56,18 @@ async def build_laws_response(
             }
     except Exception:
         logger.exception("Unable to load Congress.gov federal legislative records from the live API.")
+
+    try:
+        sample_laws = get_sample_congress_laws(limit=limit, q=q, risk=risk, tag=tag)
+        if sample_laws:
+            logger.warning("Serving sample Congress.gov records because live federal data is unavailable.")
+            return {
+                "laws": sample_laws,
+                "freshness": {"total_records": len(sample_laws), "latest_sync": None},
+                "availability": {"ready": True, "reason": "sample_fallback", "source": "congress_sample"},
+            }
+    except Exception:
+        logger.exception("Unable to load sample Congress.gov fallback records.")
 
     if db is None:
         logger.warning("Federal laws requested without an available database connection.")

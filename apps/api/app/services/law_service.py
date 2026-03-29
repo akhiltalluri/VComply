@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -11,6 +12,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 CONGRESS_BASE_URL = "https://api.congress.gov/v3/bill"
+CONGRESS_SAMPLE_PATH = Path(__file__).resolve().parents[2] / "scripts" / "samples" / "congress_sample.json"
 CONGRESS_KEYWORDS = [
     "artificial intelligence",
     "ai",
@@ -35,6 +37,13 @@ def get_json(url: str) -> dict[str, Any]:
     )
     with urlopen(req, timeout=30) as resp:
         return json.loads(resp.read().decode("utf-8"))
+
+
+def load_sample_congress_payload() -> dict[str, Any]:
+    if not CONGRESS_SAMPLE_PATH.exists():
+        return {}
+
+    return json.loads(CONGRESS_SAMPLE_PATH.read_text(encoding="utf-8"))
 
 
 def extract_bill_records(payload: dict[str, Any]) -> list[dict[str, Any]]:
@@ -377,5 +386,37 @@ async def fetch_live_congress_laws(
 
             if len(collected) >= limit:
                 return collected[:limit]
+
+    return collected[:limit]
+
+
+def get_sample_congress_laws(
+    *,
+    limit: int = 50,
+    q: str = "",
+    risk: str = "",
+    tag: str = "",
+    congress: int = 118,
+) -> list[dict[str, Any]]:
+    """Load a small real Congress.gov-backed sample snapshot as a demo-safe fallback."""
+    payload = load_sample_congress_payload()
+    bills = extract_bill_records(payload)
+    collected: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    for bill in bills:
+        normalized = normalize_live_congress_bill(bill, fallback_congress=congress)
+        if not normalized or not matches_filters(normalized, q=q, risk=risk, tag=tag):
+            continue
+
+        law_id = str(normalized.get("id") or "")
+        if not law_id or law_id in seen:
+            continue
+
+        seen.add(law_id)
+        collected.append(normalized)
+
+        if len(collected) >= limit:
+            break
 
     return collected[:limit]
