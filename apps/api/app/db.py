@@ -48,3 +48,15 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     session_factory = get_session_factory()
     async with session_factory() as session:
         yield session
+
+
+async def get_optional_db() -> AsyncGenerator[AsyncSession | None, None]:
+    """Yield a DB session when available, otherwise allow callers to degrade gracefully."""
+    try:
+        session_factory = get_session_factory()
+    except RuntimeError:
+        yield None
+        return
+
+    async with session_factory() as session:
+        yield session

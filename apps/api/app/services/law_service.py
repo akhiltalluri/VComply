@@ -1,8 +1,181 @@
 """Law catalog access for Congress.gov-backed federal legislative records."""
+from __future__ import annotations
+
+import json
+import os
 from typing import Any
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+
+CONGRESS_BASE_URL = "https://api.congress.gov/v3/bill"
+CONGRESS_KEYWORDS = [
+    "artificial intelligence",
+    "ai",
+    "machine learning",
+    "algorithmic",
+    "automated decision",
+    "deepfake",
+    "biometric",
+]
+CONGRESS_APPLICABILITY_TAGS = {
+    "hiring": ["hiring", "employment", "candidate", "recruiting"],
+    "biometrics": ["biometric", "facial recognition", "voiceprint"],
+    "privacy": ["data privacy", "consumer data", "personally identifiable"],
+    "transparency": ["disclosure", "notice", "explainability", "audit"],
+}
+
+
+def get_json(url: str) -> dict[str, Any]:
+    req = Request(
+        url,
+        headers={"Accept": "application/json", "User-Agent": "vcomply-laws-service/1.0"},
+    )
+    with urlopen(req, timeout=30) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def extract_bill_records(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    if isinstance(payload.get("bills"), list):
+        return payload["bills"]
+    if isinstance(payload.get("data"), dict) and isinstance(payload["data"].get("bills"), list):
+        return payload["data"]["bills"]
+    return []
+
+
+def extract_summary_text(bill: dict[str, Any]) -> str:
+    summary_candidate = bill.get("summary") or bill.get("latestSummary")
+
+    if isinstance(summary_candidate, str):
+        return summary_candidate.strip()
+
+    if isinstance(summary_candidate, dict):
+        for key in ("text", "actionDesc", "summary"):
+            value = summary_candidate.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+
+    if isinstance(summary_candidate, list):
+        for item in reversed(summary_candidate):
+            if isinstance(item, dict):
+                for key in ("text", "actionDesc", "summary"):
+                    value = item.get(key)
+                    if isinstance(value, str) and value.strip():
+                        return value.strip()
+            elif isinstance(item, str) and item.strip():
+                return item.strip()
+
+    return ""
+
+
+def extract_latest_action_text(bill: dict[str, Any]) -> str:
+    latest_action = bill.get("latestAction")
+    if isinstance(latest_action, dict):
+        text_value = latest_action.get("text")
+        if isinstance(text_value, str) and text_value.strip():
+            return text_value.strip()
+
+    latest_action_text = bill.get("latestActionText")
+    if isinstance(latest_action_text, str) and latest_action_text.strip():
+        return latest_action_text.strip()
+
+    return ""
+
+
+def ai_match_score(title: str, summary: str, keywords: list[str]) -> int:
+    haystack = f"{title} {summary}".lower()
+    return sum(1 for kw in keywords if kw.lower() in haystack)
+
+
+def derive_applicability_tags(title: str, summary: str) -> list[str]:
+    haystack = f"{title} {summary}".lower()
+    tags: list[str] = []
+    for tag, triggers in CONGRESS_APPLICABILITY_TAGS.items():
+        if any(trigger in haystack for trigger in triggers):
+            tags.append(tag)
+    return tags
+
+
+def normalize_live_congress_bill(
+    bill: dict[str, Any],
+    *,
+    fallback_congress: int,
+) -> dict[str, Any] | None:
+    title = str(bill.get("title") or bill.get("shortTitle") or "").strip()
+    summary = extract_summary_text(bill)
+    latest_action = extract_latest_action_text(bill) or "Latest action unavailable."
+    score = ai_match_score(title, summary, CONGRESS_KEYWORDS)
+
+    if score < 1:
+        return None
+
+    tags = derive_applicability_tags(title, summary)
+    congress = int(bill.get("congress") or fallback_congress)
+    bill_type = str(bill.get("type") or "").lower()
+    bill_number = str(bill.get("number") or "").strip()
+    bill_id = f"{congress}-{bill_type}-{bill_number}".strip("-")
+    legislative_status = normalize_legislative_status(latest_action)
+    latest_action_date = None
+
+    latest_action_obj = bill.get("latestAction")
+    if isinstance(latest_action_obj, dict):
+        action_date = latest_action_obj.get("actionDate")
+        if isinstance(action_date, str) and action_date.strip():
+            latest_action_date = action_date[:10]
+
+    return {
+        "id": bill_id or f"bill-{congress}-{bill_number or 'unknown'}",
+        "name": title or f"Bill {bill_number or 'Unknown'}",
+        "title": title or f"Bill {bill_number or 'Unknown'}",
+        "bill_number": bill_number,
+        "bill_type": bill_type,
+        "congress": congress,
+        "jurisdiction": "United States",
+        "level": "federal",
+        "status": legislative_status,
+        "summary": summary or latest_action,
+        "category": derive_category(tags),
+        "source": "congress_gov",
+        "source_label": "Congress.gov",
+        "source_url": str(bill.get("url") or "").strip(),
+        "latest_action": latest_action,
+        "latest_action_date": latest_action_date,
+        "effective_date": latest_action_date if legislative_status == "ENACTED" else None,
+        "enforcement_stage": derive_enforcement_stage(legislative_status),
+        "enforcement_status": latest_action,
+        "risk": "HIGH" if score >= 3 else "MEDIUM",
+        "tags": titleize_tags(tags),
+        "use_cases": titleize_tags(tags),
+        "affected_workflows": titleize_tags(tags),
+    }
+
+
+def matches_filters(law: dict[str, Any], *, q: str, risk: str, tag: str) -> bool:
+    query = q.strip().lower()
+    if query:
+        searchable = " ".join(
+            [
+                str(law.get("name") or ""),
+                str(law.get("summary") or ""),
+                " ".join(str(item) for item in (law.get("tags") or [])),
+                " ".join(str(item) for item in (law.get("use_cases") or [])),
+            ]
+        ).lower()
+        if query not in searchable:
+            return False
+
+    if risk.strip() and str(law.get("risk") or "").upper() != risk.strip().upper():
+        return False
+
+    if tag.strip():
+        normalized_tag = tag.strip().lower()
+        tag_values = [str(item).strip().lower() for item in law.get("tags") or []]
+        if normalized_tag not in tag_values:
+            return False
+
+    return True
 
 
 def normalize_legislative_status(latest_action_text: str) -> str:
@@ -155,3 +328,54 @@ async def get_congress_laws_freshness(db: AsyncSession) -> dict[str, Any]:
     )
     row = result.mappings().first()
     return dict(row) if row else {"total_records": 0, "latest_sync": None}
+
+
+async def fetch_live_congress_laws(
+    *,
+    limit: int = 50,
+    q: str = "",
+    risk: str = "",
+    tag: str = "",
+    congress: int = 119,
+    pages: int = 2,
+) -> list[dict[str, Any]]:
+    """Fetch live federal legislative records directly from Congress.gov as a fallback."""
+    api_key = os.getenv("CONGRESS_API_KEY")
+    if not api_key:
+        return []
+
+    collected: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    request_limit = min(max(limit, 10), 50)
+
+    for page in range(max(pages, 1)):
+        offset = page * request_limit
+        query_string = urlencode(
+            {
+                "api_key": api_key,
+                "format": "json",
+                "limit": request_limit,
+                "offset": offset,
+            }
+        )
+        payload = get_json(f"{CONGRESS_BASE_URL}/{congress}?{query_string}")
+        bills = extract_bill_records(payload)
+        if not bills:
+            break
+
+        for bill in bills:
+            normalized = normalize_live_congress_bill(bill, fallback_congress=congress)
+            if not normalized or not matches_filters(normalized, q=q, risk=risk, tag=tag):
+                continue
+
+            law_id = str(normalized.get("id") or "")
+            if not law_id or law_id in seen:
+                continue
+
+            seen.add(law_id)
+            collected.append(normalized)
+
+            if len(collected) >= limit:
+                return collected[:limit]
+
+    return collected[:limit]

@@ -401,28 +401,25 @@ async function request(path: string, init?: ApiRequestOptions): Promise<unknown>
 export function getApiErrorMessage(error: unknown, fallback: string) {
   const apiError = toApiError(error);
   const isProduction = process.env.NODE_ENV === "production";
+  const safeFallback = fallback.trim() || "The service is unavailable right now. Please try again.";
 
   if (apiError.code === "TIMEOUT") {
     return "The request timed out. Please try again.";
   }
 
   if (apiError.code === "PARSE" || apiError.code === "INVALID_RESPONSE") {
-    return apiError.message || fallback;
+    return apiError.message || safeFallback;
   }
 
   if (apiError.code === "NETWORK") {
-    return isProduction
-      ? "The API is unavailable right now. Please try again."
-      : apiError.message || "The API is unavailable right now. Please try again.";
+    return isProduction ? safeFallback : apiError.message || safeFallback;
   }
 
   if (apiError.code === "HTTP" && apiError.status && apiError.status >= 500) {
-    return isProduction
-      ? "The authentication service is unavailable right now. Please try again."
-      : apiError.message || "The authentication service is unavailable right now. Please try again.";
+    return isProduction ? safeFallback : apiError.message || safeFallback;
   }
 
-  return apiError.message || fallback;
+  return apiError.message || safeFallback;
 }
 
 export async function checkApplicability(

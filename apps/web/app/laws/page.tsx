@@ -80,7 +80,7 @@ export default function LawsPage() {
         setLawsCatalog([]);
         setSelectedLawId("");
         setFetchError(
-          "No federal legislative records are available yet. Run the Congress.gov ingest job to populate the laws library."
+          "The federal legislative library is still syncing. Please try again shortly."
         );
         setPageState("ready");
         return;
@@ -91,7 +91,12 @@ export default function LawsPage() {
       setPageState("ready");
     } catch (error) {
       setPageState("error");
-      setFetchError(getApiErrorMessage(error, "Unable to load federal legislative records"));
+      setFetchError(
+        getApiErrorMessage(
+          error,
+          "The federal legislative library is unavailable right now. Please try again."
+        )
+      );
     }
   }, []);
 
@@ -273,7 +278,7 @@ export default function LawsPage() {
           title="No federal legislative records available"
           description={
             fetchError ||
-            "The laws library is empty right now. Run the Congress.gov ingest flow to populate federal legislative records."
+            "The federal legislative library is still being prepared. Please try again shortly."
           }
           tone={pageState === "error" ? "error" : "warning"}
           actions={
