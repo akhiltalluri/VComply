@@ -34,8 +34,26 @@ export class ApiError extends Error {
 }
 
 function getBaseUrl(): string {
-  const url = process.env.NEXT_PUBLIC_API_URL ?? "/api";
-  return url.replace(/\/$/, "");
+  const configuredUrl = (process.env.NEXT_PUBLIC_API_URL ?? "/api").replace(/\/$/, "");
+
+  if (typeof window === "undefined") {
+    return configuredUrl;
+  }
+
+  if (!configuredUrl.startsWith("http://") && !configuredUrl.startsWith("https://")) {
+    return configuredUrl;
+  }
+
+  try {
+    const target = new URL(configuredUrl);
+    if (target.origin !== window.location.origin) {
+      return "/api";
+    }
+  } catch {
+    return "/api";
+  }
+
+  return configuredUrl;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
