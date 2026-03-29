@@ -13,6 +13,18 @@ class ApplicableLawItem(BaseModel):
     reason: str
 
 
+class SourceLawItem(BaseModel):
+    id: str
+    source: str
+    law: str
+    risk: str
+    reason: str
+    url: str | None = None
+    latest_action_date: str | None = None
+    last_synced_at: str | None = None
+
+
 class ApplicabilityCheckResponse(BaseModel):
     applicable_laws: list[ApplicableLawItem]
     risk_score: int
+    source_laws: list[SourceLawItem] = []

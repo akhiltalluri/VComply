@@ -1,0 +1,31 @@
+{
+  "bills": [
+    {
+      "congress": 118,
+      "type": "HR",
+      "number": "1234",
+      "title": "Artificial Intelligence Accountability Act",
+      "summary": "Requires transparency and audit controls for high-impact automated decision systems, including hiring use cases.",
+      "introducedDate": "2024-04-15",
+      "latestAction": {
+        "text": "Referred to the House Committee on Science, Space, and Technology.",
+        "actionDate": "2024-04-22"
+      },
+      "url": "https://www.congress.gov/bill/118th-congress/house-bill/1234"
+    },
+    {
+      "congress": 118,
+      "type": "S",
+      "number": "4321",
+      "title": "Federal AI Transparency in Employment Act",
+      "summary": "Establishes notice and audit obligations for AI systems used in employment-related screening and recommendations.",
+      "introducedDate": "2024-06-10",
+      "latestAction": {
+        "text": "Placed on Senate Legislative Calendar under General Orders.",
+        "actionDate": "2024-07-01"
+      },
+      "url": "https://www.congress.gov/bill/118th-congress/senate-bill/4321"
+    }
+  ]
+}
+
