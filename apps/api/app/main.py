@@ -9,7 +9,6 @@ from app.api.routes import applicability, health, laws
 
 app = FastAPI(title="VComply API", version="0.1.0")
 
-# Allow local Next.js dev server to call the API; narrow origins in production.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
