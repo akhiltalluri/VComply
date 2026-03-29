@@ -382,6 +382,7 @@ async function request(path: string, init?: ApiRequestOptions): Promise<unknown>
 
 export function getApiErrorMessage(error: unknown, fallback: string) {
   const apiError = toApiError(error);
+  const isProduction = process.env.NODE_ENV === "production";
 
   if (apiError.code === "TIMEOUT") {
     return "The request timed out. Please try again.";
@@ -392,11 +393,15 @@ export function getApiErrorMessage(error: unknown, fallback: string) {
   }
 
   if (apiError.code === "NETWORK") {
-    return "The API is unavailable right now. Please try again.";
+    return isProduction
+      ? "The API is unavailable right now. Please try again."
+      : apiError.message || "The API is unavailable right now. Please try again.";
   }
 
   if (apiError.code === "HTTP" && apiError.status && apiError.status >= 500) {
-    return "The authentication service is unavailable right now. Please try again.";
+    return isProduction
+      ? "The authentication service is unavailable right now. Please try again."
+      : apiError.message || "The authentication service is unavailable right now. Please try again.";
   }
 
   return apiError.message || fallback;

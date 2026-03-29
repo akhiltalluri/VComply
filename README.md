@@ -1,41 +1,50 @@
 # VComply
 
-AI compliance workspace for turning AI system intake into a clear federal legislative risk report.
+Federal AI compliance workspace for turning company AI usage into a clear risk report and action plan.
 
 ## Overview
 
-VComply helps teams answer a practical question fast: what federal AI-related legislative records matter to the systems we already use, and what should we do next?
+VComply helps teams understand which federal AI-related legislative records matter to their systems, why they matter, and what to do next.
 
-The product turns a short intake into a structured compliance report, keeps the latest assessment front and center, preserves report history, and lets teams review the underlying Congress.gov-backed law records without leaving the workspace.
+Instead of forcing teams to manually read policy updates, VComply turns a guided intake into a structured compliance workflow with risk scoring, report history, supporting law records, and exportable outputs.
 
-## How It Works
+## Product Flow
 
-1. Sign in or create an account
-2. Start a new assessment from Intake
-3. Generate a compliance report with computed risk
-4. Review the active report in the dashboard
-5. Revisit archived reports or explore the federal laws catalog
+1. Create an account or sign in
+2. Start an assessment
+3. Generate a compliance report
+4. Review the dashboard and current risk level
+5. Revisit archived reports
+6. Explore the federal laws library
+7. Export the report as PDF or CSV
 
 ## Key Features
 
-- Guided intake flow for company context, AI systems, and sensitive workflows
-- Computed risk scoring instead of manual risk selection
-- Dashboard built around one active assessment plus archived report history
-- PDF and CSV export for the current report
-- Federal laws explorer powered by Congress.gov-backed records
-- Auth-gated workspace with demo-friendly local persistence
+- Work-email-only signup with common free-email providers blocked
+- Demo account access for quick testing
+- Federal-law-based compliance workflow powered by Congress.gov-backed records
+- Computed risk assessment from intake inputs
+- Dashboard with current report plus archived history
+- PDF and CSV export for reports
+- Deployed frontend and backend
 
-## Tech Stack
+## Live App
 
-- Next.js, React, TypeScript, Tailwind CSS
-- FastAPI
-- Supabase Auth
-- Congress.gov-backed federal legislative data
+- Frontend: https://v-comply-web.vercel.app/
+- Backend: https://vcomply.onrender.com
 
 ## Demo Access
 
 Email: `demo@vcomply.ai`  
 Password: `DemoAccess123!`
+
+## Tech Stack
+
+- Next.js
+- FastAPI
+- Supabase
+- Vercel
+- Render
 
 ## Local Setup
 
@@ -48,22 +57,14 @@ cp apps/web/.env.example apps/web/.env.local
 cp apps/api/.env.example apps/api/.env
 ```
 
-Run the backend:
-
 ```bash
-source .venv/bin/activate
 PYTHONPATH=apps/api python3 -m uvicorn app.main:app --reload --port 8001
-```
-
-Run the frontend:
-
-```bash
 npm run dev
 ```
 
-App: `http://localhost:8000`  
-API: `http://127.0.0.1:8001`
+Frontend runs on `http://localhost:8000`  
+Backend runs on `http://localhost:8001`
 
 ## Notes
 
-This is a hackathon build, so the goal is clarity and a strong product flow over heavy enterprise infrastructure. The foundation is there for deeper persistence, broader law coverage, and richer compliance workflows.
+VComply was built as a hackathon-ready product: focused, demoable, and grounded in real federal legislative source data. The next step is broader coverage, deeper persistence, and richer reporting workflows.

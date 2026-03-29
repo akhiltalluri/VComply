@@ -12,16 +12,24 @@ from app.api.routes import applicability, auth, health, laws
 
 app = FastAPI(title="VComply API", version="0.1.0")
 
-frontend_url = os.getenv("FRONTEND_APP_URL", "http://localhost:8000").rstrip("/")
+frontend_url = os.getenv(
+    "FRONTEND_APP_URL",
+    "https://v-comply-web.vercel.app" if os.getenv("RENDER") else "http://localhost:8000",
+).rstrip("/")
+allowed_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "https://v-comply-web.vercel.app",
+]
+
+if frontend_url not in allowed_origins:
+    allowed_origins.append(frontend_url)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -7,7 +7,11 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, "../.."),
   devIndicators: false,
   async rewrites() {
-    const backendUrl = (process.env.BACKEND_API_URL ?? "http://localhost:8001").replace(/\/$/, "");
+    const fallbackBackendUrl =
+      process.env.NODE_ENV === "production"
+        ? "https://vcomply.onrender.com"
+        : "http://localhost:8001";
+    const backendUrl = (process.env.BACKEND_API_URL ?? fallbackBackendUrl).replace(/\/$/, "");
 
     return [
       {
