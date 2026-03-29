@@ -1,19 +1,281 @@
-/**
- * Shared frontend types — keep aligned with FastAPI schemas in `apps/api/app/schemas`.
- * Optionally promote duplicates to `packages/shared` later.
- */
+export type RiskLevel = "HIGH" | "MEDIUM" | "LOW";
+
+export type ActionPriority = RiskLevel | "INFO";
+
+export type AssessmentLawStatus = "ACTIVE" | "UPCOMING" | "MONITORING";
+
+export type EnforcementStatus = "ENACTED" | "PROPOSED" | "GUIDANCE";
+
+export type DashboardActionStatus = "OPEN" | "IN_PROGRESS" | "SCHEDULED" | "COMPLETED";
+
+export type ChecklistActionStatus = "todo" | "complete";
+
 export type ApplicableLaw = {
+  id?: string;
   law: string;
-  risk: string;
+  jurisdiction?: string;
+  risk: RiskLevel | string;
   reason: string;
+  next_step?: string;
+};
+
+export type AssessmentLaw = ApplicableLaw & {
+  id?: string;
+  next_step: string;
+  jurisdiction?: string;
+  category?: string;
+  status?: AssessmentLawStatus;
+  enforcement_status?: string;
+  affected_workflows?: string[];
+  why_it_applies?: string;
+  owner?: string;
+  source_label?: string;
+  team?: string;
+};
+
+export type ComplianceAction = {
+  id: string;
+  title: string;
+  system: string;
+  source: string;
+  priority: ActionPriority;
+  description?: string;
+  status?: DashboardActionStatus;
+  owner?: string;
+  due?: string;
+  business_area?: string;
+};
+
+export type LawAction = {
+  id: string;
+  title: string;
+  description?: string;
+  article: string;
+  due: string;
+  urgency?: ActionPriority;
+  status: ChecklistActionStatus;
+  owner?: string;
+};
+
+export type LawTimelineItem = {
+  date: string;
+  label: string;
+  detail: string;
+};
+
+export type LawRecord = {
+  id: string;
+  title: string;
+  jurisdiction: string;
+  regionBadge: string;
+  status: EnforcementStatus;
+  risk: RiskLevel;
+  category: string;
+  summary: string;
+  description: string;
+  whyItMatters: string;
+  useCases: string[];
+  affectedWorkflows: string[];
+  tags: string[];
+  effectiveDate: string;
+  enforcementStage: string;
+  enforcementStatus: string;
+  sourceLabel: string;
+  ownerTeam: string;
+  notes?: string[];
+  exposure: {
+    title: string;
+    body: string;
+    penalty: string;
+    rationale: string;
+  };
+  requiredActions: LawAction[];
+  timeline: LawTimelineItem[];
+};
+
+export type AssessmentSummary = {
+  headline: string;
+  narrative: string;
+  high_risk_issues: number;
+  medium_risk_issues: number;
+  required_action_count: number;
+  impacted_regulation_count: number;
+};
+
+export type OperationalSummary = {
+  deployment_profile: string;
+  business_areas: string[];
+  deployed_systems: string[];
+  jurisdictions: string[];
+  review_cadence: string;
+};
+
+export type StatusIndicatorTone = "blue" | "high" | "medium" | "low" | "neutral";
+
+export type StatusIndicator = {
+  label: string;
+  value: string;
+  tone: StatusIndicatorTone;
+};
+
+export type RecentActivityItem = {
+  id: string;
+  title: string;
+  detail: string;
+  date: string;
+  status: "Completed" | "In Progress" | "Scheduled" | "Flagged";
+};
+
+export type ComplianceAssessment = {
+  risk_score: number;
+  severity: RiskLevel;
+  summary: AssessmentSummary;
+  source_label: string;
+  impacted_business_areas: string[];
+  operational_summary: OperationalSummary;
+  status_indicators: StatusIndicator[];
+  applicable_laws: AssessmentLaw[];
+  required_actions: ComplianceAction[];
+  recent_activity: RecentActivityItem[];
+};
+
+export type ComplianceReportRecord = {
+  id: string;
+  created_at: string;
+  title: string;
+  company_name: string;
+  risk_score: number;
+  risk_level: RiskLevel;
+  summary: string;
+  applicable_laws_count: number;
+  required_actions_count: number;
+  status_label: string;
+  assessment: ComplianceAssessment;
+  intake_draft: IntakeDraft | null;
+};
+
+export type ComplianceWorkspace = {
+  current_report: ComplianceReportRecord | null;
+  archived_reports: ComplianceReportRecord[];
+};
+
+export type IntakeDraft = {
+  company_name: string;
+  industry: string;
+  ai_use_cases: string;
+  selected_categories: string[];
+  critical_use_cases: string;
+  data_provenance: string;
+  additional_context: string;
 };
 
 export type ApplicabilityCheckRequest = {
-  states: string[];
-  uses_hiring_ai: boolean;
+  ai_use_cases?: string;
+  selected_categories?: string[];
+  critical_use_cases?: string;
+  states?: string[];
+  uses_hiring_ai?: boolean;
 };
 
 export type ApplicabilityCheckResponse = {
   applicable_laws: ApplicableLaw[];
   risk_score: number;
+  source_laws?: SourceLaw[];
+};
+
+export type SourceLaw = {
+  id: string;
+  source: string;
+  law: string;
+  jurisdiction?: string;
+  level?: string;
+  status?: string;
+  risk: string;
+  reason: string;
+  latest_action?: string | null;
+  source_url?: string | null;
+  url?: string | null;
+  latest_action_date?: string | null;
+  last_synced_at?: string | null;
+};
+
+export type CongressLawsResponse = {
+  laws: SourceLaw[];
+  freshness?: {
+    total_records: number;
+    latest_sync: string | null;
+  };
+};
+
+export type LoginRequest = {
+  email: string;
+  password: string;
+};
+
+export type SignUpRequest = {
+  email: string;
+  password: string;
+};
+
+export type AuthUser = {
+  id?: string | null;
+  email?: string | null;
+  role?: string | null;
+  created_at?: string | null;
+  last_sign_in_at?: string | null;
+  email_confirmed_at?: string | null;
+};
+
+export type AuthSession = {
+  access_token?: string | null;
+  refresh_token?: string | null;
+  expires_in?: number | null;
+  expires_at?: number | null;
+  token_type?: string | null;
+};
+
+export type LoginResponse = {
+  success: boolean;
+  message: string;
+  user: AuthUser | null;
+  session: AuthSession | null;
+};
+
+export type SignUpResponse = {
+  success: boolean;
+  message: string;
+  user: AuthUser | null;
+  session: AuthSession | null;
+  confirmation_required: boolean;
+};
+
+export type LawApiRecord = {
+  id?: string;
+  name?: string;
+  law?: string;
+  title?: string;
+  jurisdiction?: string;
+  level?: string;
+  status?: string;
+  summary?: string;
+  risk?: RiskLevel | string;
+  category?: string;
+  source?: string;
+  source_label?: string;
+  source_url?: string;
+  latest_action?: string;
+  latest_action_date?: string | null;
+  effective_date?: string | null;
+  bill_number?: string;
+  bill_type?: string;
+  congress?: number;
+  tags?: string[];
+  use_cases?: string[];
+  affected_workflows?: string[];
+  enforcement_stage?: string;
+  enforcement_status?: string;
+};
+
+export type LawsResponse = {
+  laws: LawApiRecord[];
 };

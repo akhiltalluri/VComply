@@ -1,25 +1,69 @@
 # VComply
 
-Real-time AI compliance intelligence MVP: map your AI use cases and jurisdictions to applicable laws with a simple intake flow, dashboard, and API.
+AI compliance workspace for turning AI system intake into a clear federal legislative risk report.
 
-## Monorepo layout
+## Overview
 
-| Path | Purpose |
-|------|---------|
-| `apps/web` | Next.js 15 frontend (intake, dashboard, laws) |
-| `apps/api` | FastAPI backend (health, applicability checks, laws) |
-| `packages/shared` | Shared types/constants (grow as needed) |
-| `packages/law-seeds` | Seed data for regulations (JSON, etc.) |
-| `docs` | Architecture and product notes |
+VComply helps teams answer a practical question fast: what federal AI-related legislative records matter to the systems we already use, and what should we do next?
 
-## Quick start
+The product turns a short intake into a structured compliance report, keeps the latest assessment front and center, preserves report history, and lets teams review the underlying Congress.gov-backed law records without leaving the workspace.
 
-**Web** — from `apps/web`: `npm install` then `npm run dev` (default [http://localhost:3000](http://localhost:3000)).
+## How It Works
 
-**API** — from `apps/api`: create a venv, `pip install -r requirements.txt`, then `uvicorn app.main:app --reload --port 8000` ([http://localhost:8000/docs](http://localhost:8000/docs)).
+1. Sign in or create an account
+2. Start a new assessment from Intake
+3. Generate a compliance report with computed risk
+4. Review the active report in the dashboard
+5. Revisit archived reports or explore the federal laws catalog
 
-Set `NEXT_PUBLIC_API_URL=http://localhost:8000` in `apps/web/.env.local` so the browser can call the API.
+## Key Features
 
-## License
+- Guided intake flow for company context, AI systems, and sensitive workflows
+- Computed risk scoring instead of manual risk selection
+- Dashboard built around one active assessment plus archived report history
+- PDF and CSV export for the current report
+- Federal laws explorer powered by Congress.gov-backed records
+- Auth-gated workspace with demo-friendly local persistence
 
-See [LICENSE](LICENSE).
+## Tech Stack
+
+- Next.js, React, TypeScript, Tailwind CSS
+- FastAPI
+- Supabase Auth
+- Congress.gov-backed federal legislative data
+
+## Demo Access
+
+Email: `demo@vcomply.ai`  
+Password: `DemoAccess123!`
+
+## Local Setup
+
+```bash
+npm install
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r apps/api/requirements.txt
+cp apps/web/.env.example apps/web/.env.local
+cp apps/api/.env.example apps/api/.env
+```
+
+Run the backend:
+
+```bash
+source .venv/bin/activate
+PYTHONPATH=apps/api python3 -m uvicorn app.main:app --reload --port 8001
+```
+
+Run the frontend:
+
+```bash
+npm run dev
+```
+
+App: `http://localhost:8000`  
+API: `http://127.0.0.1:8001`
+
+## Notes
+
+This is a hackathon build, so the goal is clarity and a strong product flow over heavy enterprise infrastructure. The foundation is there for deeper persistence, broader law coverage, and richer compliance workflows.

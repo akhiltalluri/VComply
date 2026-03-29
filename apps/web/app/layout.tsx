@@ -7,13 +7,6 @@ export const metadata: Metadata = {
   description: "Real-time AI compliance intelligence",
 };
 
-const navigation = [
-  { href: "/", label: "Home" },
-  { href: "/intake", label: "Intake" },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/laws", label: "Laws" },
-];
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -21,15 +14,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full">
-      <body className="min-h-full bg-slate-950 text-slate-100 antialiased">
-        <div className="min-h-screen bg-slate-950">
-          <AppHeader navigation={navigation} />
-
-          <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8 lg:py-12">
-            <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-[0_24px_80px_rgba(2,6,23,0.38)] sm:p-8 lg:p-10">
-              {children}
-            </div>
-          </main>
+      <body
+        suppressHydrationWarning
+        className="min-h-full bg-slate-950 text-slate-100 antialiased"
+      >
+        <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.06),_transparent_28%),linear-gradient(180deg,_rgba(2,6,23,0.98)_0%,_rgba(2,6,23,1)_100%)]">
+          <AppHeader />
+          <main className="pb-16">{children}</main>
         </div>
       </body>
     </html>
