@@ -1,6 +1,6 @@
 # Congress.gov Ingestion (MVP)
 
-This folder contains additive scripts for loading AI-related law candidates from Congress.gov into Supabase.
+This folder contains the ingestion script for loading AI-related federal legislative records from Congress.gov into Supabase.
 
 ## 1) Create table (once)
 
@@ -34,11 +34,11 @@ python scripts/congress_ingest.py --congress 118 --pages 5 --limit 100 --min-sco
 
 ## 4) Read from API
 
-Existing preview endpoint remains:
+Primary laws-library endpoint:
 
 - `GET /laws`
 
-New additive endpoint for ingested records:
+Alias endpoint for the same Congress.gov-backed library:
 
 - `GET /laws/congress?limit=50`
 
@@ -70,4 +70,3 @@ Manual local backfill example:
 ```bash
 python scripts/congress_ingest.py --congress 117 --pages 5 --limit 100 --min-score 1
 ```
-

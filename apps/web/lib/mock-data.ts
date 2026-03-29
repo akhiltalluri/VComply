@@ -1119,65 +1119,94 @@ function createGenericLawRecord(item: LawApiRecord, index: number): LawRecord {
   const jurisdiction = fallbackText(item.jurisdiction, "Not provided");
   const risk =
     item.risk === "HIGH" || item.risk === "MEDIUM" || item.risk === "LOW" ? item.risk : "MEDIUM";
+  const legislativeStatus = fallbackText(item.status, "IN_PROGRESS");
+  const sourceLabel = fallbackText(item.source_label ?? item.source, "Congress.gov");
+  const latestAction = fallbackText(item.latest_action, "Latest action unavailable.");
+  const category = fallbackText(item.category, "Federal AI Legislation");
+  const useCases = safeStringArray(item.use_cases);
+  const affectedWorkflows = safeStringArray(item.affected_workflows);
+  const tags = safeStringArray(item.tags);
+  const displayStatus: LawRecord["status"] =
+    legislativeStatus === "ENACTED" ? "ENACTED" : "PROPOSED";
+  const effectiveDate =
+    typeof item.effective_date === "string" && item.effective_date.trim()
+      ? item.effective_date.trim()
+      : "Not enacted";
+  const billLabel =
+    item.bill_number && item.congress
+      ? `${item.bill_number} • ${item.congress}th Congress`
+      : item.bill_number || "";
 
   return {
     id: fallbackText(item.id, `api-law-${index}`),
     title,
     jurisdiction,
     regionBadge: deriveRegionBadge(jurisdiction),
-    status: "GUIDANCE",
+    status: displayStatus,
     risk,
-    category: fallbackText(item.category, "AI Governance"),
-    summary: fallbackText(item.summary, "Regulatory obligations connected to the assessed AI deployment."),
+    category,
+    summary: fallbackText(
+      item.summary,
+      "Congress.gov did not return a summary for this federal legislative record."
+    ),
     description:
       fallbackText(
         item.summary,
-        "This regulation has been returned by the backend and is being displayed with a frontend-enriched detail profile until richer law metadata is available from the API."
+        "This federal legislative record was ingested from Congress.gov and normalized for the VComply laws library."
       ),
     whyItMatters:
       fallbackText(
         item.summary,
-        "The backend identified this regulation as relevant to the current deployment profile."
+        "This federal legislative record has been flagged as relevant to AI governance, transparency, employment, privacy, or related oversight obligations."
       ),
-    useCases: ["Governance"],
-    affectedWorkflows: ["In-scope AI workflow"],
-    tags: ["API Response"],
-    effectiveDate: "Monitoring",
-    enforcementStage: "Guidance / Monitoring",
-    enforcementStatus: "Assessment-derived signal",
-    sourceLabel: "Backend response",
-    ownerTeam: "Compliance Program",
+    useCases: useCases.length > 0 ? useCases : ["Federal Oversight"],
+    affectedWorkflows: affectedWorkflows.length > 0 ? affectedWorkflows : ["In-scope AI workflow"],
+    tags: [...(billLabel ? [billLabel] : []), ...(tags.length > 0 ? tags : ["Congress.gov"])],
+    effectiveDate,
+    enforcementStage: fallbackText(item.enforcement_stage, "Active Legislative Process"),
+    enforcementStatus: fallbackText(item.enforcement_status, latestAction),
+    sourceLabel,
+    ownerTeam: "Federal Affairs",
     notes: [
-      "Detailed law metadata is not yet available from the API, so frontend defaults are being used for presentation.",
+      `Source: ${sourceLabel}`,
+      latestAction,
+      item.source_url ? `Official record: ${item.source_url}` : "Official Congress.gov record available through the laws API.",
     ],
     exposure: {
-      title: "Compliance Exposure",
+      title: legislativeStatus === "ENACTED" ? "Federal Exposure" : "Legislative Watchpoint",
       body:
         fallbackText(
           item.summary,
-          "This regulation has been flagged by the backend and should be reviewed for applicability to the current deployment."
+          "This federal legislative record may affect AI governance expectations, reporting duties, or future operational compliance obligations."
         ),
-      penalty: "Review against official source material.",
+      penalty:
+        legislativeStatus === "ENACTED"
+          ? "Assess implementation requirements against the enacted federal text."
+          : "Monitor bill movement before treating it as an enforceable obligation.",
       rationale:
-        "The backend has identified this rule as relevant, but detailed rationale is not yet available from the law catalog endpoint.",
+        latestAction,
     },
     requiredActions: [
       lawAction(
         `api-review-${index}`,
-        "Review backend-identified regulatory obligation",
-        "Backend applicability result",
+        legislativeStatus === "ENACTED"
+          ? "Assess enacted federal obligation"
+          : "Monitor federal bill progress",
+        billLabel || "Congress.gov record",
         "Current review cycle",
         risk,
         "todo",
-        "Validate why this regulation applies and assign an internal owner for remediation planning.",
-        "Compliance Program"
+        legislativeStatus === "ENACTED"
+          ? "Review the enacted federal text, map implementation scope, and assign an owner for remediation planning."
+          : "Track bill progress, capture the latest action, and evaluate whether the proposal could affect current AI workflows if enacted.",
+        "Federal Affairs"
       ),
     ],
     timeline: [
       {
-        date: "Current",
-        label: "Returned by backend catalog",
-        detail: "Detailed law metadata is being enriched on the frontend until the backend provides a richer schema.",
+        date: fallbackText(item.latest_action_date, "Current"),
+        label: "Latest congressional action",
+        detail: latestAction,
       },
     ],
   };

@@ -17,8 +17,13 @@ class SourceLawItem(BaseModel):
     id: str
     source: str
     law: str
+    jurisdiction: str = "United States"
+    level: str = "federal"
+    status: str = "IN_PROGRESS"
     risk: str
     reason: str
+    latest_action: str | None = None
+    source_url: str | None = None
     url: str | None = None
     latest_action_date: str | None = None
     last_synced_at: str | None = None

@@ -37,7 +37,7 @@ export function LawDetailPanel({ law, applicabilityExplanation }: LawDetailPanel
         <div className="mt-5">
           <h2 className="text-3xl font-semibold tracking-tight text-slate-100">{law.title}</h2>
           <p className="mt-2 text-sm leading-6 text-slate-400">
-            {law.category} regulation • {law.jurisdiction}
+            {law.category} • {law.jurisdiction}
           </p>
           <p className="mt-2 text-sm leading-6 text-slate-500">
             Source reference: {law.sourceLabel} • Responsible team: {law.ownerTeam}
@@ -63,7 +63,7 @@ export function LawDetailPanel({ law, applicabilityExplanation }: LawDetailPanel
 
         <section className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-            Regulation Summary
+            Legislative Summary
           </p>
           <p className="text-sm leading-7 text-slate-300">{law.description || "Summary unavailable."}</p>
         </section>
@@ -163,7 +163,7 @@ export function LawDetailPanel({ law, applicabilityExplanation }: LawDetailPanel
           <div className="grid gap-3 sm:grid-cols-2">
             <InsetPanel>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Effective Date
+                Effective / Enactment Date
               </p>
               <p className="mt-2 text-sm font-medium text-slate-100">{law.effectiveDate || "Unavailable"}</p>
             </InsetPanel>

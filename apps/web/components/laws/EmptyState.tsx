@@ -8,8 +8,8 @@ type EmptyStateProps = {
 export function EmptyState({ onReset }: EmptyStateProps) {
   return (
     <StatePanel
-      title="No matching regulations available"
-      description="Broaden the search criteria or clear one or more filters to restore the current regulatory view."
+      title="No matching federal records available"
+      description="Broaden the search criteria or clear one or more filters to restore the current federal legislative view."
       tone="warning"
       icon={
         <svg viewBox="0 0 24 24" className="h-6 w-6 fill-none stroke-current stroke-[1.8]">

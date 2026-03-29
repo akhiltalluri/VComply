@@ -166,8 +166,13 @@ export type SourceLaw = {
   id: string;
   source: string;
   law: string;
+  jurisdiction?: string;
+  level?: string;
+  status?: string;
   risk: string;
   reason: string;
+  latest_action?: string | null;
+  source_url?: string | null;
   url?: string | null;
   latest_action_date?: string | null;
   last_synced_at?: string | null;
@@ -220,6 +225,7 @@ export type SignUpResponse = {
   message: string;
   user: AuthUser | null;
   session: AuthSession | null;
+  confirmation_required: boolean;
 };
 
 export type LawApiRecord = {
@@ -228,9 +234,25 @@ export type LawApiRecord = {
   law?: string;
   title?: string;
   jurisdiction?: string;
+  level?: string;
+  status?: string;
   summary?: string;
   risk?: RiskLevel | string;
   category?: string;
+  source?: string;
+  source_label?: string;
+  source_url?: string;
+  latest_action?: string;
+  latest_action_date?: string | null;
+  effective_date?: string | null;
+  bill_number?: string;
+  bill_type?: string;
+  congress?: number;
+  tags?: string[];
+  use_cases?: string[];
+  affected_workflows?: string[];
+  enforcement_stage?: string;
+  enforcement_status?: string;
 };
 
 export type LawsResponse = {

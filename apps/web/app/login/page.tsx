@@ -139,6 +139,10 @@ export default function LoginPage() {
               Sign in to review regulatory exposure, track remediation work, and continue current
               assessments.
             </p>
+            <p className="text-sm leading-6 text-slate-500">
+              Confirmed workspace accounts, including the seeded demo account, can sign in
+              immediately.
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">

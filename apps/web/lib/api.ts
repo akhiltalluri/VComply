@@ -155,15 +155,44 @@ function normalizeLawApiRecord(value: unknown, index: number): LawApiRecord | nu
     return null;
   }
 
+  const normalizeStringArray = (candidate: unknown) =>
+    Array.isArray(candidate)
+      ? candidate
+          .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+          .map((item) => item.trim())
+      : [];
+
   return {
     id: sanitizeText(record.id, `law-${index}`),
     name: sanitizeText(record.name, sanitizeText(record.law, sanitizeText(record.title, `Regulation ${index + 1}`))),
     law: sanitizeText(record.law, sanitizeText(record.name, sanitizeText(record.title, `Regulation ${index + 1}`))),
     title: sanitizeText(record.title, sanitizeText(record.name, sanitizeText(record.law, `Regulation ${index + 1}`))),
     jurisdiction: sanitizeText(record.jurisdiction, "Not provided"),
+    level: sanitizeText(record.level, "federal"),
+    status: sanitizeText(record.status, "IN_PROGRESS"),
     summary: sanitizeText(record.summary, "Summary unavailable."),
     risk: normalizeRiskLevel(record.risk),
     category: sanitizeText(record.category, "AI Governance"),
+    source: sanitizeText(record.source, "congress_gov"),
+    source_label: sanitizeText(record.source_label, "Congress.gov"),
+    source_url: sanitizeText(record.source_url, ""),
+    latest_action: sanitizeText(record.latest_action, "Latest action unavailable."),
+    latest_action_date:
+      typeof record.latest_action_date === "string" && record.latest_action_date.trim()
+        ? record.latest_action_date.trim()
+        : null,
+    effective_date:
+      typeof record.effective_date === "string" && record.effective_date.trim()
+        ? record.effective_date.trim()
+        : null,
+    bill_number: sanitizeText(record.bill_number, ""),
+    bill_type: sanitizeText(record.bill_type, ""),
+    congress: typeof record.congress === "number" ? record.congress : undefined,
+    tags: normalizeStringArray(record.tags),
+    use_cases: normalizeStringArray(record.use_cases),
+    affected_workflows: normalizeStringArray(record.affected_workflows),
+    enforcement_stage: sanitizeText(record.enforcement_stage, "Active Legislative Process"),
+    enforcement_status: sanitizeText(record.enforcement_status, "Pending congressional action"),
   };
 }
 
@@ -270,6 +299,10 @@ function normalizeSignupResponse(payload: unknown): SignUpResponse {
     ),
     user: normalizeAuthUser(record.user),
     session: normalizeAuthSession(record.session),
+    confirmation_required:
+      typeof record.confirmation_required === "boolean"
+        ? record.confirmation_required
+        : true,
   };
 }
 

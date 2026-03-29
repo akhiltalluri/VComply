@@ -1,9 +1,8 @@
 """
 Congress.gov ingestion script for MVP law discovery.
 
-This script is additive and does not modify existing API behavior.
-It fetches bills from Congress.gov API, filters AI-related items,
-and upserts normalized records into public.law_documents.
+This script fetches AI-relevant federal legislative records from the
+official Congress.gov API and upserts them into public.law_documents.
 """
 from __future__ import annotations
 
@@ -11,8 +10,6 @@ import argparse
 import asyncio
 import json
 import os
-import time
-import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -23,7 +20,6 @@ import asyncpg
 from dotenv import load_dotenv
 
 BASE_URL = "https://api.congress.gov/v3/bill"
-DEBUG_LOG_PATH = "/Users/sriyamsvedula/Vcomply/VComply/.cursor/debug-04ddc2.log"
 DEFAULT_KEYWORDS = [
     "artificial intelligence",
     "ai",
@@ -33,21 +29,6 @@ DEFAULT_KEYWORDS = [
     "deepfake",
     "biometric",
 ]
-
-
-def _debug_log(hypothesis_id: str, message: str, data: dict) -> None:
-    payload = {
-        "sessionId": "04ddc2",
-        "id": f"log_{int(time.time() * 1000)}_{uuid.uuid4().hex[:8]}",
-        "timestamp": int(time.time() * 1000),
-        "runId": "pre-fix",
-        "hypothesisId": hypothesis_id,
-        "location": "apps/api/scripts/congress_ingest.py:ingest",
-        "message": message,
-        "data": data,
-    }
-    with open(DEBUG_LOG_PATH, "a", encoding="utf-8") as fp:
-        fp.write(json.dumps(payload) + "\n")
 DEFAULT_APPLICABILITY_TAGS = {
     "hiring": ["hiring", "employment", "candidate", "recruiting"],
     "biometrics": ["biometric", "facial recognition", "voiceprint"],
@@ -90,6 +71,45 @@ def extract_bill_records(payload: dict[str, Any]) -> list[dict[str, Any]]:
     if isinstance(payload.get("data"), dict) and isinstance(payload["data"].get("bills"), list):
         return payload["data"]["bills"]
     return []
+
+
+def extract_summary_text(bill: dict[str, Any]) -> str:
+    summary_candidate = bill.get("summary") or bill.get("latestSummary")
+
+    if isinstance(summary_candidate, str):
+        return summary_candidate.strip()
+
+    if isinstance(summary_candidate, dict):
+        for key in ("text", "actionDesc", "summary"):
+            value = summary_candidate.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+
+    if isinstance(summary_candidate, list):
+        for item in reversed(summary_candidate):
+            if isinstance(item, dict):
+                for key in ("text", "actionDesc", "summary"):
+                    value = item.get(key)
+                    if isinstance(value, str) and value.strip():
+                        return value.strip()
+            elif isinstance(item, str) and item.strip():
+                return item.strip()
+
+    return ""
+
+
+def extract_latest_action_text(bill: dict[str, Any]) -> str:
+    latest_action = bill.get("latestAction")
+    if isinstance(latest_action, dict):
+        text_value = latest_action.get("text")
+        if isinstance(text_value, str) and text_value.strip():
+            return text_value.strip()
+
+    latest_action_text = bill.get("latestActionText")
+    if isinstance(latest_action_text, str) and latest_action_text.strip():
+        return latest_action_text.strip()
+
+    return ""
 
 
 def parse_date(date_text: str | None) -> datetime | None:
@@ -221,7 +241,7 @@ def read_payload_from_file(input_file: str) -> dict[str, Any]:
 
 def build_law_row(bill: dict[str, Any], congress_default: int, keywords: list[str]) -> dict[str, Any] | None:
     title = str(bill.get("title") or bill.get("shortTitle") or "")
-    summary = str(bill.get("summary") or bill.get("latestSummary") or "")
+    summary = extract_summary_text(bill)
     score = ai_match_score(title, summary, keywords)
     if score < 1:
         return None
@@ -231,7 +251,7 @@ def build_law_row(bill: dict[str, Any], congress_default: int, keywords: list[st
     congress_num = int(bill.get("congress") or congress_default)
     source_id = f"{congress_num}-{bill_type}-{bill_number}".strip("-")
     latest_action = bill.get("latestAction") if isinstance(bill.get("latestAction"), dict) else {}
-    latest_action_text = str(latest_action.get("text") or bill.get("latestActionText") or "")
+    latest_action_text = extract_latest_action_text(bill)
     latest_action_date = parse_date(str(latest_action.get("actionDate") or bill.get("latestActionDate") or ""))
     introduced_at = parse_date(str(bill.get("introducedDate") or ""))
     url_value = str(bill.get("url") or "")
@@ -263,13 +283,6 @@ async def ingest(
     keywords: list[str],
     input_file: str | None,
 ) -> dict[str, int | str | None]:
-    # region agent log
-    _debug_log(
-        "H4",
-        "ingest_started",
-        {"congress": congress, "pages": pages, "limit": limit, "min_score": min_score, "using_input_file": bool(input_file)},
-    )
-    # endregion
     load_dotenv()
     api_key = os.getenv("CONGRESS_API_KEY")
     database_url = os.getenv("DATABASE_URL")
@@ -356,13 +369,6 @@ async def ingest(
     finally:
         await conn.close()
 
-    # region agent log
-    _debug_log(
-        "H4",
-        "ingest_finished",
-        {"run_id": run_id, "scanned": scanned, "matched": matched, "upserted": inserted_or_updated},
-    )
-    # endregion
     return {
         "run_id": run_id,
         "scanned": scanned,
@@ -408,4 +414,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

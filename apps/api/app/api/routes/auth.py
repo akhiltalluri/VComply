@@ -10,26 +10,15 @@ from supabase_auth.errors import (
 )
 
 from app.schemas.auth import LoginRequest, SignUpRequest
+from app.services.auth_policy import (
+    is_reserved_demo_email,
+    normalize_email,
+    uses_blocked_email_domain,
+)
 from app.services.supabase_client import get_supabase_client
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
-
-BLOCKED_EMAIL_DOMAINS = {
-    "aol.com",
-    "gmail.com",
-    "gmx.com",
-    "hotmail.com",
-    "icloud.com",
-    "live.com",
-    "me.com",
-    "msn.com",
-    "outlook.com",
-    "proton.me",
-    "protonmail.com",
-    "yahoo.com",
-    "ymail.com",
-}
 
 
 def serialize_user(user: Any) -> dict[str, Any] | None:
@@ -64,34 +53,49 @@ def get_error_message(error: Exception, fallback: str) -> str:
     return message or fallback
 
 
-def uses_personal_email_domain(email: str) -> bool:
-    _, _, domain = email.strip().lower().rpartition("@")
-    return domain in BLOCKED_EMAIL_DOMAINS
-
-
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
 def sign_up(payload: SignUpRequest) -> dict[str, Any]:
-    if uses_personal_email_domain(payload.email):
+    normalized_email = normalize_email(payload.email)
+
+    if uses_blocked_email_domain(normalized_email):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Please use your company email address.",
+        )
+
+    if is_reserved_demo_email(normalized_email):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This email is reserved for demo access. Please use your company email address or sign in with the demo account.",
         )
 
     try:
         supabase = get_supabase_client()
         response = supabase.auth.sign_up(
             {
-                "email": payload.email,
+                "email": normalized_email,
                 "password": payload.password,
             }
         )
 
         user = serialize_user(response.user)
         session = serialize_session(response.session)
+
+        if user is None:
+            logger.warning(
+                "Supabase signup returned no user",
+                extra={"email": normalized_email},
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unable to create account.",
+            )
+
+        confirmation_required = not bool(session and session.get("access_token"))
         message = (
-            "Signup successful. Confirm the email address to finish activating the account."
-            if session is None
-            else "Signup successful."
+            "Account created. Please confirm your email before signing in."
+            if confirmation_required
+            else "Account created. You can access your workspace now."
         )
 
         return {
@@ -99,6 +103,7 @@ def sign_up(payload: SignUpRequest) -> dict[str, Any]:
             "message": message,
             "user": user,
             "session": session,
+            "confirmation_required": confirmation_required,
         }
     except RuntimeError as error:
         raise HTTPException(
@@ -111,9 +116,10 @@ def sign_up(payload: SignUpRequest) -> dict[str, Any]:
             detail=get_error_message(error, "Password does not meet Supabase requirements."),
         ) from error
     except AuthApiError as error:
+        message = get_error_message(error, "Unable to create account.")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=get_error_message(error, "Unable to create account."),
+            detail=message,
         ) from error
     except AuthError as error:
         raise HTTPException(
@@ -129,11 +135,13 @@ def sign_up(payload: SignUpRequest) -> dict[str, Any]:
 
 @router.post("/login")
 def login(payload: LoginRequest) -> dict[str, Any]:
+    normalized_email = normalize_email(payload.email)
+
     try:
         supabase = get_supabase_client()
         response = supabase.auth.sign_in_with_password(
             {
-                "email": payload.email,
+                "email": normalized_email,
                 "password": payload.password,
             }
         )
@@ -145,7 +153,7 @@ def login(payload: LoginRequest) -> dict[str, Any]:
             logger.warning(
                 "Incomplete Supabase login response received",
                 extra={
-                    "email": payload.email,
+                    "email": normalized_email,
                     "has_user": user is not None,
                     "has_session": session is not None,
                 },
@@ -174,15 +182,26 @@ def login(payload: LoginRequest) -> dict[str, Any]:
             detail=get_error_message(error, "Invalid email or password."),
         ) from error
     except AuthApiError as error:
+        message = get_error_message(error, "Unable to sign in.")
+        if "email not confirmed" in message.lower():
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Confirm your email before signing in.",
+            ) from error
+
         status_code = (
             status.HTTP_401_UNAUTHORIZED
             if getattr(error, "status", None) == 401
             else status.HTTP_400_BAD_REQUEST
         )
-        fallback = "Invalid email or password." if status_code == status.HTTP_401_UNAUTHORIZED else "Unable to sign in."
+        fallback = (
+            "Invalid email or password."
+            if status_code == status.HTTP_401_UNAUTHORIZED
+            else "Unable to sign in."
+        )
         raise HTTPException(
             status_code=status_code,
-            detail=get_error_message(error, fallback),
+            detail=message or fallback,
         ) from error
     except AuthError as error:
         raise HTTPException(

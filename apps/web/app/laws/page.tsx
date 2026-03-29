@@ -20,7 +20,6 @@ import {
   buildLawApplicabilityExplanation,
   hydrateLawRecords,
   lawFilterOptions,
-  lawsData,
 } from "@/lib/mock-data";
 import { parseStoredJson } from "@/lib/storage";
 import type { IntakeDraft, LawRecord } from "@/lib/mock-data";
@@ -48,26 +47,11 @@ export default function LawsPage() {
   const [fetchError, setFetchError] = useState("");
   const [intakeDraft, setIntakeDraft] = useState<IntakeDraft | null>(null);
   const [query, setQuery] = useState("");
-  const [selectedJurisdictions, setSelectedJurisdictions] = useState<string[]>([
-    "New York City",
-    "California",
-    "Illinois",
-    "European Union",
-  ]);
-  const [selectedUseCases, setSelectedUseCases] = useState<string[]>(["Hiring", "Profiling"]);
-  const [selectedRiskLevels, setSelectedRiskLevels] = useState<string[]>(["HIGH", "MEDIUM", "LOW"]);
-  const [selectedEnforcementStages, setSelectedEnforcementStages] = useState<string[]>([
-    "Active Enforcement",
-    "In Force",
-    "Phased Enforcement",
-    "Upcoming Compliance",
-  ]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([
-    "Employment AI",
-    "Consumer Privacy",
-    "AI Governance",
-    "Privacy",
-  ]);
+  const [selectedJurisdictions, setSelectedJurisdictions] = useState<string[]>([]);
+  const [selectedUseCases, setSelectedUseCases] = useState<string[]>([]);
+  const [selectedRiskLevels, setSelectedRiskLevels] = useState<string[]>([]);
+  const [selectedEnforcementStages, setSelectedEnforcementStages] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedLawId, setSelectedLawId] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("risk");
 
@@ -93,9 +77,11 @@ export default function LawsPage() {
       const hydrated = hydrateLawRecords(apiLaws);
 
       if (hydrated.length === 0) {
-        setLawsCatalog(lawsData);
-        setSelectedLawId((current) => current || lawsData[0]?.id || "");
-        setFetchError("No regulations were returned by the backend. Showing the local reference catalog.");
+        setLawsCatalog([]);
+        setSelectedLawId("");
+        setFetchError(
+          "No federal legislative records are available yet. Run the Congress.gov ingest job to populate the laws library."
+        );
         setPageState("ready");
         return;
       }
@@ -104,18 +90,8 @@ export default function LawsPage() {
       setSelectedLawId((current) => current || hydrated[0]?.id || "");
       setPageState("ready");
     } catch (error) {
-      if (lawsData.length > 0) {
-        setLawsCatalog(lawsData);
-        setSelectedLawId((current) => current || lawsData[0]?.id || "");
-        setFetchError(
-          `${getApiErrorMessage(error, "Unable to load regulations")} Showing the local reference catalog instead.`
-        );
-        setPageState("ready");
-        return;
-      }
-
       setPageState("error");
-      setFetchError(getApiErrorMessage(error, "Unable to load regulations"));
+      setFetchError(getApiErrorMessage(error, "Unable to load federal legislative records"));
     }
   }, []);
 
@@ -242,7 +218,14 @@ export default function LawsPage() {
   const activeEnforcementCount = useMemo(
     () =>
       filteredLaws.filter((law) =>
-        ["Active Enforcement", "In Force", "Phased Enforcement", "Litigation Risk"].includes(
+        [
+          "Enacted Federal Law",
+          "Passed Congress",
+          "Advancing Through Congress",
+          "Committee Review",
+          "Introduced in Congress",
+          "Active Legislative Process",
+        ].includes(
           law.enforcementStage
         )
       ).length,
@@ -303,9 +286,12 @@ export default function LawsPage() {
     return (
       <PageContainer className="flex min-h-[60vh] items-center pb-16 pt-8">
         <StatePanel
-          title="Unable to load regulations"
-          description={fetchError || "The regulatory catalog could not be loaded for this workspace."}
-          tone="error"
+          title="No federal legislative records available"
+          description={
+            fetchError ||
+            "The laws library is empty right now. Run the Congress.gov ingest flow to populate federal legislative records."
+          }
+          tone={pageState === "error" ? "error" : "warning"}
           actions={
             <Button variant="secondary" onClick={() => void loadLaws()}>
               Retry
@@ -320,19 +306,19 @@ export default function LawsPage() {
     <PageContainer className="space-y-8 pb-16 pt-8">
       <SectionHeader
         title="Regulatory Intelligence"
-        subtitle="Explore the regulations most relevant to the current deployment profile, understand why each one matters, and identify the actions they imply."
+        subtitle="Explore federal AI-related legislative records sourced from Congress.gov, understand the latest congressional status, and assess what each item could mean for your system."
         className="max-w-5xl"
       />
 
       <InsetPanel tone="blue" className="px-4 py-4">
         <p className="text-sm font-medium text-slate-100">
           {intakeDraft?.company_name
-            ? `Use this workspace to explain the regulatory exposure for ${intakeDraft.company_name}.`
-            : "Use this workspace to explain which regulations matter and why they affect the current system profile."}
+            ? `Use this workspace to explain the federal legislative exposure for ${intakeDraft.company_name}.`
+            : "Use this workspace to review federal legislative records that may affect the current system profile."}
         </p>
         <p className="mt-1 text-sm leading-6 text-slate-400">
-          Search the catalog, compare enforcement posture, and open any law to review the impact,
-          rationale, and required actions.
+          Search the Congress.gov-backed catalog, compare bill status, and open any record to review
+          impact, rationale, and next-step monitoring guidance.
         </p>
       </InsetPanel>
 
@@ -397,19 +383,19 @@ export default function LawsPage() {
             <div className="grid gap-3 sm:grid-cols-3">
               <InsetPanel>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  Regulations In View
+                  Federal Records In View
                 </p>
                 <p className="mt-3 text-2xl font-semibold text-slate-100">{filteredLaws.length}</p>
               </InsetPanel>
               <InsetPanel tone={highRiskCount > 0 ? "red" : "green"}>
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  High-Risk Regulations
+                  High-Risk Records
                 </p>
                 <p className="mt-3 text-2xl font-semibold text-slate-100">{highRiskCount}</p>
               </InsetPanel>
               <InsetPanel tone="blue">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  Active Enforcement
+                  Advanced Status
                 </p>
                 <p className="mt-3 text-2xl font-semibold text-slate-100">
                   {activeEnforcementCount}
@@ -419,9 +405,9 @@ export default function LawsPage() {
 
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-wrap items-center gap-3 text-sm text-slate-400">
-                <span>{filteredLaws.length} regulations in view</span>
+                <span>{filteredLaws.length} federal records in view</span>
                 <span className="hidden h-1 w-1 rounded-full bg-slate-700 sm:block" />
-                <span>{highRiskCount} high-risk regulations</span>
+                <span>{highRiskCount} high-risk records</span>
                 <span className="hidden h-1 w-1 rounded-full bg-slate-700 sm:block" />
                 <span>{sourceLabel}</span>
               </div>

@@ -13,6 +13,7 @@ from app.schemas.applicability import (
     SourceLawItem,
 )
 from app.services.applicability_engine import run_applicability_check
+from app.services.law_service import normalize_legislative_status
 
 router = APIRouter()
 
@@ -29,7 +30,9 @@ async def fetch_source_laws(db: AsyncSession, payload: ApplicabilityCheckRequest
               title as law,
               coalesce(risk, 'MEDIUM') as risk,
               coalesce(summary, 'Summary unavailable.') as reason,
+              coalesce(status, 'Latest action unavailable.') as latest_action,
               url,
+              url as source_url,
               latest_action_date,
               last_synced_at
             from public.law_documents
@@ -59,8 +62,13 @@ async def fetch_source_laws(db: AsyncSession, payload: ApplicabilityCheckRequest
             id=str(item.get("id") or ""),
             source=str(item.get("source") or "congress_gov"),
             law=str(item.get("law") or "Federal bill"),
+            jurisdiction="United States",
+            level="federal",
+            status=normalize_legislative_status(str(item.get("latest_action") or "")),
             risk=str(item.get("risk") or "MEDIUM"),
             reason=str(item.get("reason") or "No summary available."),
+            latest_action=str(item.get("latest_action")) if item.get("latest_action") else None,
+            source_url=str(item.get("source_url")) if item.get("source_url") else None,
             url=str(item.get("url")) if item.get("url") else None,
             latest_action_date=str(item.get("latest_action_date")) if item.get("latest_action_date") else None,
             last_synced_at=str(item.get("last_synced_at")) if item.get("last_synced_at") else None,

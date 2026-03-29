@@ -48,7 +48,7 @@ export function FilterSidebar({
             Regulatory Filters
           </h2>
           <p className="mt-2 text-sm leading-6 text-slate-400">
-            Narrow the regulation set by jurisdiction, workflow, enforcement posture, and risk level.
+            Narrow the federal legislative catalog by jurisdiction, workflow, congressional status, and risk level.
           </p>
           </div>
           <Button variant="ghost" className="px-3 py-2 text-xs" onClick={onReset}>

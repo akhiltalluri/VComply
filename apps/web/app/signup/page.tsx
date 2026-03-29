@@ -88,9 +88,13 @@ export default function SignupPage() {
         return;
       }
 
+      setPassword("");
+      setConfirmPassword("");
       setSuccessMessage(
         response.message ||
-          "Account created. Confirm your email address before signing in."
+          (response.confirmation_required
+            ? "Account created. Confirm your email address before signing in."
+            : "Account created. You can sign in now.")
       );
     } catch (error) {
       setErrorMessage(getApiErrorMessage(error, "Unable to create account."));
@@ -116,8 +120,9 @@ export default function SignupPage() {
               required action tracking.
             </p>
             <p className="max-w-xl text-sm leading-6 text-slate-400">
-              Use your company email address to create an account. Personal email domains are not
-              accepted for workspace access.
+              Use your company email address to create an account. You will need to confirm that
+              email before first sign-in. Personal email domains are not accepted for workspace
+              access.
             </p>
           </div>
 
@@ -143,8 +148,8 @@ export default function SignupPage() {
               Provision your compliance workspace
             </h2>
             <p className="text-sm leading-6 text-slate-400">
-              Use a work email to create access for your company team. If email confirmation is
-              enabled, you will confirm your address before signing in.
+              Use a work email to create access for your company team. Newly created non-demo
+              accounts must confirm the email address before they can sign in.
             </p>
           </div>
 
