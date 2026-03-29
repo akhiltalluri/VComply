@@ -10,7 +10,7 @@ from supabase_auth.errors import (
 )
 
 from app.schemas.auth import LoginRequest, SignUpRequest
-from app.services.supabase_client import supabase
+from app.services.supabase_client import get_supabase_client
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 logger = logging.getLogger(__name__)
@@ -78,6 +78,7 @@ def sign_up(payload: SignUpRequest) -> dict[str, Any]:
         )
 
     try:
+        supabase = get_supabase_client()
         response = supabase.auth.sign_up(
             {
                 "email": payload.email,
@@ -99,6 +100,11 @@ def sign_up(payload: SignUpRequest) -> dict[str, Any]:
             "user": user,
             "session": session,
         }
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=get_error_message(error, "Auth service is not configured."),
+        ) from error
     except AuthWeakPasswordError as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -124,6 +130,7 @@ def sign_up(payload: SignUpRequest) -> dict[str, Any]:
 @router.post("/login")
 def login(payload: LoginRequest) -> dict[str, Any]:
     try:
+        supabase = get_supabase_client()
         response = supabase.auth.sign_in_with_password(
             {
                 "email": payload.email,
@@ -156,6 +163,11 @@ def login(payload: LoginRequest) -> dict[str, Any]:
         }
     except HTTPException:
         raise
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=get_error_message(error, "Auth service is not configured."),
+        ) from error
     except AuthInvalidCredentialsError as error:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

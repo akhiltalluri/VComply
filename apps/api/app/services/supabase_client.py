@@ -9,10 +9,11 @@ load_dotenv(dotenv_path=Path(__file__).resolve().parents[2] / ".env")
 supabase_url = os.getenv("SUPABASE_URL")
 supabase_key = os.getenv("SUPABASE_KEY")
 
-if not supabase_url:
-    raise RuntimeError("SUPABASE_URL is not set")
+def get_supabase_client() -> Client:
+    if not supabase_url:
+        raise RuntimeError("SUPABASE_URL is not set")
 
-if not supabase_key:
-    raise RuntimeError("SUPABASE_KEY is not set")
+    if not supabase_key:
+        raise RuntimeError("SUPABASE_KEY is not set")
 
-supabase: Client = create_client(supabase_url, supabase_key)
+    return create_client(supabase_url, supabase_key)
