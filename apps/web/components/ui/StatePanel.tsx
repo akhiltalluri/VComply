@@ -31,7 +31,12 @@ export function StatePanel({
   return (
     <Card
       tone="primary"
-      className={cn("mx-auto max-w-2xl p-8 text-center sm:p-10", toneClasses[tone], className)}
+      className={cn(
+        "motion-enter mx-auto max-w-2xl p-8 text-center sm:p-10",
+        tone === "info" && "motion-sheen",
+        toneClasses[tone],
+        className
+      )}
     >
       {icon ? (
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-800 bg-slate-950/70 text-slate-200">

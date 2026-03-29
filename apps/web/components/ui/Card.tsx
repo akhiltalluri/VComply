@@ -14,7 +14,11 @@ const toneClasses: Record<NonNullable<CardProps["tone"]>, string> = {
 export function Card({ children, className, tone = "primary", ...props }: CardProps) {
   return (
     <div
-      className={cn("rounded-2xl border p-6 backdrop-blur-[1px]", toneClasses[tone], className)}
+      className={cn(
+        "rounded-2xl border p-6 backdrop-blur-[1px] transition-[transform,box-shadow,border-color,background-color] duration-300 will-change-transform motion-reduce:transform-none",
+        toneClasses[tone],
+        className
+      )}
       {...props}
     >
       {children}

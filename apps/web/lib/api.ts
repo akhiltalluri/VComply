@@ -142,10 +142,31 @@ function normalizeApplicabilityResponse(payload: unknown): ApplicabilityCheckRes
   const applicableLaws = Array.isArray(record.applicable_laws)
     ? record.applicable_laws.map((item, index) => normalizeApplicableLaw(item, index))
     : [];
+  const sourceLaws = Array.isArray(record.source_laws)
+    ? record.source_laws
+        .map((item, index) => normalizeLawApiRecord(item, index))
+        .filter((item): item is LawApiRecord => Boolean(item))
+        .map((item, index) => ({
+          id: item.id ?? `source-law-${index}`,
+          source: item.source ?? "congress_gov",
+          law: item.law ?? item.title ?? item.name ?? "Federal record",
+          jurisdiction: item.jurisdiction ?? "United States",
+          level: item.level ?? "federal",
+          status: item.status ?? "IN_PROGRESS",
+          risk: item.risk ?? "MEDIUM",
+          reason: item.summary ?? "Summary unavailable.",
+          latest_action: item.latest_action ?? null,
+          source_url: item.source_url ?? null,
+          url: item.source_url ?? null,
+          latest_action_date: item.latest_action_date ?? null,
+          last_synced_at: null,
+        }))
+    : undefined;
 
   return {
     risk_score: riskScore,
     applicable_laws: applicableLaws,
+    source_laws: sourceLaws,
   };
 }
 

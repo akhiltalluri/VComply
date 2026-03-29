@@ -3,14 +3,32 @@ from pydantic import BaseModel, Field
 
 
 class ApplicabilityCheckRequest(BaseModel):
-    states: list[str] = Field(..., description="US state codes, e.g. NY, CA")
-    uses_hiring_ai: bool = Field(..., description="Whether AI is used in hiring / recruiting")
+    ai_use_cases: str = Field(
+        default="", description="Description of AI use cases in scope"
+    )
+    selected_categories: list[str] = Field(
+        default_factory=list, description="Selected AI system categories"
+    )
+    critical_use_cases: str | None = Field(
+        default=None, description="Additional sensitive workflow context"
+    )
+    states: list[str] = Field(
+        default_factory=list,
+        description="Legacy compatibility field for older intake payloads.",
+    )
+    uses_hiring_ai: bool | None = Field(
+        default=None,
+        description="Legacy compatibility field for older intake payloads.",
+    )
 
 
 class ApplicableLawItem(BaseModel):
+    id: str | None = None
     law: str
+    jurisdiction: str | None = "United States"
     risk: str
     reason: str
+    next_step: str | None = None
 
 
 class SourceLawItem(BaseModel):

@@ -20,7 +20,14 @@ export function InsetPanel({
   ...props
 }: InsetPanelProps) {
   return (
-    <div className={cn("rounded-2xl border p-4", toneClasses[tone], className)} {...props}>
+    <div
+      className={cn(
+        "rounded-2xl border p-4 transition-[transform,border-color,background-color,box-shadow] duration-300 motion-reduce:transform-none",
+        toneClasses[tone],
+        className
+      )}
+      {...props}
+    >
       {children}
     </div>
   );

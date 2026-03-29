@@ -36,7 +36,7 @@ function FilterCheckbox({
 export function FilterGroup({ title, items, selected, onToggle }: FilterGroupProps) {
   return (
     <div className="space-y-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">{title}</p>
+      <p className="text-xs font-semibold tracking-[0.04em] text-slate-500">{title}</p>
       <div className="space-y-2">
         {items.map((item) => (
           <FilterCheckbox

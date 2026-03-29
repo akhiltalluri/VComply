@@ -18,13 +18,14 @@ import { getApiErrorMessage, getLaws } from "@/lib/api";
 import { useAuthState } from "@/lib/auth";
 import {
   buildLawApplicabilityExplanation,
+  getRiskLevelOptions,
   hydrateLawRecords,
   lawFilterOptions,
 } from "@/lib/mock-data";
 import { parseStoredJson } from "@/lib/storage";
 import type { IntakeDraft, LawRecord } from "@/lib/mock-data";
 
-type SortMode = "risk" | "jurisdiction" | "name";
+type SortMode = "risk" | "status" | "name";
 type LawsPageState = "loading" | "ready" | "error";
 
 function riskOrder(risk: string) {
@@ -47,7 +48,6 @@ export default function LawsPage() {
   const [fetchError, setFetchError] = useState("");
   const [intakeDraft, setIntakeDraft] = useState<IntakeDraft | null>(null);
   const [query, setQuery] = useState("");
-  const [selectedJurisdictions, setSelectedJurisdictions] = useState<string[]>([]);
   const [selectedUseCases, setSelectedUseCases] = useState<string[]>([]);
   const [selectedRiskLevels, setSelectedRiskLevels] = useState<string[]>([]);
   const [selectedEnforcementStages, setSelectedEnforcementStages] = useState<string[]>([]);
@@ -120,12 +120,8 @@ export default function LawsPage() {
         normalizedQuery.length === 0 ||
         law.title.toLowerCase().includes(normalizedQuery) ||
         law.summary.toLowerCase().includes(normalizedQuery) ||
-        law.jurisdiction.toLowerCase().includes(normalizedQuery) ||
         law.tags.some((tag) => tag.toLowerCase().includes(normalizedQuery)) ||
         law.useCases.some((useCase) => useCase.toLowerCase().includes(normalizedQuery));
-
-      const matchesJurisdiction =
-        selectedJurisdictions.length === 0 || selectedJurisdictions.includes(law.jurisdiction);
 
       const matchesUseCase =
         selectedUseCases.length === 0 ||
@@ -143,7 +139,6 @@ export default function LawsPage() {
 
       return (
         matchesQuery &&
-        matchesJurisdiction &&
         matchesUseCase &&
         matchesRisk &&
         matchesEnforcementStage &&
@@ -152,8 +147,8 @@ export default function LawsPage() {
     });
 
     return result.sort((a, b) => {
-      if (sortMode === "jurisdiction") {
-        return a.jurisdiction.localeCompare(b.jurisdiction);
+      if (sortMode === "status") {
+        return a.enforcementStage.localeCompare(b.enforcementStage);
       }
 
       if (sortMode === "name") {
@@ -167,7 +162,6 @@ export default function LawsPage() {
     query,
     selectedCategories,
     selectedEnforcementStages,
-    selectedJurisdictions,
     selectedRiskLevels,
     selectedUseCases,
     sortMode,
@@ -191,11 +185,6 @@ export default function LawsPage() {
       selectedLaw
         ? buildLawApplicabilityExplanation(selectedLaw, {
             companyName: intakeDraft?.company_name || "your company",
-            states: intakeDraft?.states_of_operation
-              ?.split(",")
-              .map((item) => item.trim())
-              .filter(Boolean),
-            usesAiInHiring: intakeDraft?.uses_ai_in_hiring,
             aiUseCases: [
               intakeDraft?.ai_use_cases,
               intakeDraft?.critical_use_cases,
@@ -204,7 +193,6 @@ export default function LawsPage() {
               .filter(Boolean)
               .join(", "),
             selectedCategories: intakeDraft?.selected_categories,
-            jurisdictions: [selectedLaw.jurisdiction],
           })
         : "No company-specific applicability explanation is available for the current selection.",
     [intakeDraft, selectedLaw]
@@ -234,18 +222,15 @@ export default function LawsPage() {
 
   const activeFilterOptions = useMemo(
     () => ({
-      jurisdictions:
-        lawsCatalog.length > 0
-          ? Array.from(new Set(lawsCatalog.map((law) => law.jurisdiction))).sort()
-          : lawFilterOptions.jurisdictions,
       useCases:
         lawsCatalog.length > 0
           ? Array.from(new Set(lawsCatalog.flatMap((law) => law.useCases))).sort()
           : lawFilterOptions.useCases,
-      riskLevels:
+      riskLevels: getRiskLevelOptions(
         lawsCatalog.length > 0
           ? Array.from(new Set(lawsCatalog.map((law) => law.risk)))
-          : lawFilterOptions.riskLevels,
+          : lawFilterOptions.riskLevels
+      ),
       enforcementStages:
         lawsCatalog.length > 0
           ? Array.from(new Set(lawsCatalog.map((law) => law.enforcementStage))).sort()
@@ -260,7 +245,6 @@ export default function LawsPage() {
 
   function resetFilters() {
     setQuery("");
-    setSelectedJurisdictions([]);
     setSelectedUseCases([]);
     setSelectedRiskLevels([]);
     setSelectedEnforcementStages([]);
@@ -307,10 +291,10 @@ export default function LawsPage() {
       <SectionHeader
         title="Regulatory Intelligence"
         subtitle="Explore federal AI-related legislative records sourced from Congress.gov, understand the latest congressional status, and assess what each item could mean for your system."
-        className="max-w-5xl"
+        className="motion-enter max-w-5xl"
       />
 
-      <InsetPanel tone="blue" className="px-4 py-4">
+      <InsetPanel tone="blue" className="motion-enter motion-enter-delay-1 px-4 py-4">
         <p className="text-sm font-medium text-slate-100">
           {intakeDraft?.company_name
             ? `Use this workspace to explain the federal legislative exposure for ${intakeDraft.company_name}.`
@@ -323,7 +307,7 @@ export default function LawsPage() {
       </InsetPanel>
 
       {fetchError ? (
-        <InsetPanel tone="amber" className="px-4 py-4">
+        <InsetPanel tone="amber" className="motion-message px-4 py-4">
           <p className="text-sm font-medium text-amber-200">{fetchError}</p>
           <div className="mt-3 flex flex-wrap gap-3">
             <Button variant="secondary" size="md" onClick={() => void loadLaws()}>
@@ -333,22 +317,17 @@ export default function LawsPage() {
         </InsetPanel>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)_420px]">
+      <div className="motion-enter motion-enter-delay-2 grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)_420px]">
         <div className="xl:sticky xl:top-24 xl:self-start">
           <FilterSidebar
-            jurisdictions={activeFilterOptions.jurisdictions}
             useCases={activeFilterOptions.useCases}
             riskLevels={activeFilterOptions.riskLevels}
             enforcementStages={activeFilterOptions.enforcementStages}
             categories={activeFilterOptions.categories}
-            selectedJurisdictions={selectedJurisdictions}
             selectedUseCases={selectedUseCases}
             selectedRiskLevels={selectedRiskLevels}
             selectedEnforcementStages={selectedEnforcementStages}
             selectedCategories={selectedCategories}
-            onToggleJurisdiction={(value) =>
-              setSelectedJurisdictions((current) => toggleItem(current, value))
-            }
             onToggleUseCase={(value) => setSelectedUseCases((current) => toggleItem(current, value))}
             onToggleRiskLevel={(value) =>
               setSelectedRiskLevels((current) => toggleItem(current, value))
@@ -364,7 +343,7 @@ export default function LawsPage() {
         </div>
 
         <div className="space-y-5">
-          <Card tone="primary" className="space-y-5 p-5">
+          <Card tone="primary" className="motion-lift space-y-5 p-5">
             <div className="relative">
               <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
                 <svg viewBox="0 0 24 24" className="h-5 w-5 stroke-current stroke-[1.8]">
@@ -375,25 +354,25 @@ export default function LawsPage() {
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by regulation, workflow, jurisdiction, or compliance topic..."
+                placeholder="Search by federal record, workflow, congressional status, or compliance topic..."
                 className="bg-slate-950 pl-12"
               />
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
-              <InsetPanel>
+                <InsetPanel className="motion-lift">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                   Federal Records In View
                 </p>
                 <p className="mt-3 text-2xl font-semibold text-slate-100">{filteredLaws.length}</p>
               </InsetPanel>
-              <InsetPanel tone={highRiskCount > 0 ? "red" : "green"}>
+                <InsetPanel tone={highRiskCount > 0 ? "red" : "green"} className="motion-lift">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                   High-Risk Records
                 </p>
                 <p className="mt-3 text-2xl font-semibold text-slate-100">{highRiskCount}</p>
               </InsetPanel>
-              <InsetPanel tone="blue">
+                <InsetPanel tone="blue" className="motion-lift">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                   Advanced Status
                 </p>
@@ -420,8 +399,8 @@ export default function LawsPage() {
                   className="min-w-[170px] bg-slate-950 py-2.5 text-sm sm:min-w-[190px]"
                 >
                   <option value="risk">Risk level</option>
-                  <option value="jurisdiction">Jurisdiction</option>
-                  <option value="name">Regulation name</option>
+                  <option value="status">Congressional status</option>
+                  <option value="name">Record name</option>
                 </Select>
               </div>
             </div>
@@ -440,7 +419,11 @@ export default function LawsPage() {
 
         <div className="xl:sticky xl:top-24 xl:self-start">
           {filteredLaws.length > 0 ? (
-            <LawDetailPanel law={selectedLaw} applicabilityExplanation={applicabilityExplanation} />
+            <LawDetailPanel
+              key={selectedLaw.id}
+              law={selectedLaw}
+              applicabilityExplanation={applicabilityExplanation}
+            />
           ) : (
             <StatePanel
               title="No regulation selected"

@@ -139,12 +139,30 @@ export type ComplianceAssessment = {
   recent_activity: RecentActivityItem[];
 };
 
+export type ComplianceReportRecord = {
+  id: string;
+  created_at: string;
+  title: string;
+  company_name: string;
+  risk_score: number;
+  risk_level: RiskLevel;
+  summary: string;
+  applicable_laws_count: number;
+  required_actions_count: number;
+  status_label: string;
+  assessment: ComplianceAssessment;
+  intake_draft: IntakeDraft | null;
+};
+
+export type ComplianceWorkspace = {
+  current_report: ComplianceReportRecord | null;
+  archived_reports: ComplianceReportRecord[];
+};
+
 export type IntakeDraft = {
   company_name: string;
   industry: string;
-  states_of_operation: string;
   ai_use_cases: string;
-  uses_ai_in_hiring: boolean;
   selected_categories: string[];
   critical_use_cases: string;
   data_provenance: string;
@@ -152,8 +170,11 @@ export type IntakeDraft = {
 };
 
 export type ApplicabilityCheckRequest = {
-  states: string[];
-  uses_hiring_ai: boolean;
+  ai_use_cases?: string;
+  selected_categories?: string[];
+  critical_use_cases?: string;
+  states?: string[];
+  uses_hiring_ai?: boolean;
 };
 
 export type ApplicabilityCheckResponse = {

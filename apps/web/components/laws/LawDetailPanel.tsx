@@ -19,13 +19,13 @@ export function LawDetailPanel({ law, applicabilityExplanation }: LawDetailPanel
   const notes = law.notes && law.notes.length > 0 ? law.notes : [];
 
   return (
-    <Card tone="primary" className="h-full p-0">
+    <Card tone="primary" className="motion-swap h-full p-0">
       <div className="border-b border-slate-800 px-6 py-6">
         <div className="flex flex-wrap items-center gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-800 bg-slate-950 text-xs font-semibold tracking-[0.2em] text-slate-200">
             {law.regionBadge}
           </span>
-          <span className="rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+          <span className="rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1 text-[11px] font-semibold tracking-[0.08em] text-slate-400">
             {law.status}
           </span>
           <Badge tone="blue" className="tracking-[0.16em]">
@@ -48,49 +48,49 @@ export function LawDetailPanel({ law, applicabilityExplanation }: LawDetailPanel
       <div className="space-y-8 px-6 py-6">
         <section className="grid gap-4 sm:grid-cols-2">
           <InsetPanel>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-              Jurisdiction
+            <p className="text-xs font-semibold tracking-[0.04em] text-slate-500">
+              Federal scope
             </p>
             <p className="mt-2 text-sm font-medium text-slate-100">{law.jurisdiction || "Not provided"}</p>
           </InsetPanel>
           <InsetPanel>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-              Effective Date
+            <p className="text-xs font-semibold tracking-[0.04em] text-slate-500">
+              Effective date
             </p>
             <p className="mt-2 text-sm font-medium text-slate-100">{law.effectiveDate || "Unavailable"}</p>
           </InsetPanel>
         </section>
 
         <section className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-            Legislative Summary
+          <p className="text-xs font-semibold tracking-[0.04em] text-slate-500">
+            Legislative summary
           </p>
           <p className="text-sm leading-7 text-slate-300">{law.description || "Summary unavailable."}</p>
         </section>
 
         <section className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-            Why It Matters
+          <p className="text-xs font-semibold tracking-[0.04em] text-slate-500">
+            Why it matters
           </p>
-          <InsetPanel className="p-5">
+          <InsetPanel className="motion-lift p-5">
             <p className="text-sm leading-7 text-slate-200">{law.whyItMatters || "Why this matters has not been provided."}</p>
           </InsetPanel>
         </section>
 
         <section className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-            Risk Rationale
+          <p className="text-xs font-semibold tracking-[0.04em] text-slate-500">
+            Risk rationale
           </p>
-          <InsetPanel className="p-5">
+          <InsetPanel className="motion-lift p-5">
             <p className="text-sm leading-7 text-slate-300">{law.exposure.rationale || "Risk rationale unavailable."}</p>
           </InsetPanel>
         </section>
 
         <section className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+          <p className="text-xs font-semibold tracking-[0.04em] text-slate-500">
             Why this applies to your company
           </p>
-          <InsetPanel tone="blue" className="p-5">
+          <InsetPanel tone="blue" className="motion-lift p-5">
             <p className="text-sm leading-7 text-slate-200">
               {applicabilityExplanation || "No company-specific applicability explanation is available for this regulation."}
             </p>
@@ -98,14 +98,14 @@ export function LawDetailPanel({ law, applicabilityExplanation }: LawDetailPanel
         </section>
 
         <section className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-            Affected Workflows
+          <p className="text-xs font-semibold tracking-[0.04em] text-slate-500">
+            Affected workflows
           </p>
           <div className="flex flex-wrap gap-2">
             {affectedWorkflows.map((workflow) => (
               <span
                 key={workflow}
-                className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.16em] text-slate-300"
+                className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-xs font-medium tracking-[0.08em] text-slate-300"
               >
                 {workflow}
               </span>
@@ -118,16 +118,16 @@ export function LawDetailPanel({ law, applicabilityExplanation }: LawDetailPanel
             <svg viewBox="0 0 16 16" className="h-4 w-4 fill-red-400">
               <path d="M8 1.5 15 14.5H1L8 1.5Zm0 4.2a.8.8 0 0 0-.8.8v2.5a.8.8 0 0 0 1.6 0V6.5a.8.8 0 0 0-.8-.8Zm0 6.1a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" />
             </svg>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-red-300">
+            <p className="text-xs font-semibold tracking-[0.08em] text-red-300">
               {law.exposure.title}
             </p>
           </div>
           <p className="mt-4 text-sm leading-7 text-slate-100">
             {law.exposure.body || "Critical exposure details are unavailable."}
           </p>
-          <InsetPanel tone="red" className="mt-5 rounded-xl px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-              Penalty Exposure
+          <InsetPanel tone="red" className="motion-lift mt-5 rounded-xl px-4 py-3">
+            <p className="text-xs font-semibold tracking-[0.04em] text-slate-500">
+              Penalty exposure
             </p>
             <p className="mt-2 text-sm font-medium text-red-200">{law.exposure.penalty || "Penalty exposure unavailable."}</p>
           </InsetPanel>
@@ -135,10 +135,10 @@ export function LawDetailPanel({ law, applicabilityExplanation }: LawDetailPanel
 
         <section className="space-y-4">
           <div className="flex items-center justify-between gap-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-              Required Actions
+            <p className="text-xs font-semibold tracking-[0.04em] text-slate-500">
+              Required actions
             </p>
-            <span className="text-xs uppercase tracking-[0.18em] text-slate-500">
+            <span className="text-xs tracking-[0.08em] text-slate-500">
               {requiredActions.length} items
             </span>
           </div>
@@ -156,29 +156,29 @@ export function LawDetailPanel({ law, applicabilityExplanation }: LawDetailPanel
         </section>
 
         <section className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-            Enforcement Timeline and Metadata
+          <p className="text-xs font-semibold tracking-[0.04em] text-slate-500">
+            Enforcement timeline and metadata
           </p>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <InsetPanel>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Effective / Enactment Date
+              <p className="text-xs font-semibold tracking-[0.04em] text-slate-500">
+                Effective / enactment date
               </p>
               <p className="mt-2 text-sm font-medium text-slate-100">{law.effectiveDate || "Unavailable"}</p>
             </InsetPanel>
             <InsetPanel>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Enforcement Status
+              <p className="text-xs font-semibold tracking-[0.04em] text-slate-500">
+                Enforcement status
               </p>
               <p className="mt-2 text-sm font-medium text-slate-100">{law.enforcementStatus || "Pending classification"}</p>
             </InsetPanel>
           </div>
 
           {notes.length > 0 ? (
-            <InsetPanel className="p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Regulatory Notes
+            <InsetPanel className="motion-lift p-5">
+              <p className="text-xs font-semibold tracking-[0.04em] text-slate-500">
+                Regulatory notes
               </p>
               <ul className="mt-3 space-y-3 text-sm leading-7 text-slate-300">
                 {notes.map((note) => (

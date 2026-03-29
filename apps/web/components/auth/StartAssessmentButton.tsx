@@ -18,7 +18,7 @@ export function StartAssessmentButton({
     <Button
       size={size}
       className={className}
-      onClick={() => router.push(authenticated ? "/intake" : "/login")}
+      onClick={() => router.push(authenticated ? "/intake?new=1" : "/login")}
     >
       Start Assessment
     </Button>

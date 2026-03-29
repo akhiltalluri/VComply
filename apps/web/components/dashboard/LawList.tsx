@@ -12,16 +12,8 @@ type LawListProps = {
   laws: LawItem[];
 };
 
-function inferJurisdiction(lawName: string) {
-  if (lawName.includes("EU") || lawName.includes("GDPR")) {
-    return "European Union";
-  }
-
-  if (lawName.includes("NYC") || lawName.includes("California") || lawName.includes("CCPA")) {
-    return "United States";
-  }
-
-  return "Applicable Jurisdiction";
+function inferJurisdiction() {
+  return "United States";
 }
 
 function normalizeRiskLevel(risk: string): RiskLevel {
@@ -72,13 +64,13 @@ export function LawList({ laws }: LawListProps) {
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-3">
                     <h3 className="text-lg font-semibold text-slate-100">{law.law}</h3>
-                    <span className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
-                      {law.jurisdiction ?? inferJurisdiction(law.law)}
+                    <span className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-1 text-xs font-medium tracking-[0.08em] text-slate-400">
+                      {law.jurisdiction ?? inferJurisdiction()}
                     </span>
-                    <span className="rounded-lg border border-slate-800 bg-white/[0.03] px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+                    <span className="rounded-lg border border-slate-800 bg-white/[0.03] px-3 py-1 text-xs font-medium tracking-[0.08em] text-slate-400">
                       {law.category ?? (law.law.includes("AI") ? "AI Governance" : "Regulatory Trigger")}
                     </span>
-                    <span className="rounded-lg border border-slate-800 bg-white/[0.03] px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+                    <span className="rounded-lg border border-slate-800 bg-white/[0.03] px-3 py-1 text-xs font-medium tracking-[0.08em] text-slate-400">
                       {law.status ?? (law.risk === "HIGH" ? "ACTIVE" : "MONITORING")}
                     </span>
                   </div>
@@ -116,7 +108,7 @@ export function LawList({ laws }: LawListProps) {
 
               {isExpanded && law.why_it_applies ? (
                 <div className="mt-4 rounded-2xl border border-sky-500/15 bg-sky-500/[0.06] px-4 py-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  <p className="text-xs font-semibold tracking-[0.04em] text-slate-500">
                     Why this applies to your company
                   </p>
                   <p className="mt-3 text-sm leading-7 text-slate-200">{law.why_it_applies}</p>

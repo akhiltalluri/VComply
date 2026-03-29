@@ -5,9 +5,7 @@ import type { ComplianceAssessment } from "@/lib/mock-data";
 type ReviewPanelProps = {
   companyName: string;
   industry: string;
-  statesOfOperation: string;
   aiUseCases: string;
-  usesAiInHiring: boolean;
   selectedCategoryTitles: string[];
   criticalUseCases: string;
   dataProvenance: string;
@@ -24,7 +22,7 @@ function ReviewRow({
 }) {
   return (
     <InsetPanel>
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{label}</p>
+      <p className="text-xs font-semibold tracking-[0.04em] text-slate-500">{label}</p>
       <p className="mt-2 text-sm leading-7 text-slate-200">{value}</p>
     </InsetPanel>
   );
@@ -33,9 +31,7 @@ function ReviewRow({
 export function ReviewPanel({
   companyName,
   industry,
-  statesOfOperation,
   aiUseCases,
-  usesAiInHiring,
   selectedCategoryTitles,
   criticalUseCases,
   dataProvenance,
@@ -46,29 +42,29 @@ export function ReviewPanel({
     <div className="space-y-6">
       <Card tone="subtle" className="p-6">
         <div className="grid gap-4 sm:grid-cols-2">
-          <ReviewRow label="Assessed Entity" value={companyName || "Not provided"} />
-          <ReviewRow label="Industry Context" value={industry || "Not provided"} />
-          <ReviewRow label="Jurisdictional Exposure" value={statesOfOperation || "Not provided"} />
+          <ReviewRow label="Assessed entity" value={companyName || "Not provided"} />
+          <ReviewRow label="Industry context" value={industry || "Not provided"} />
           <ReviewRow
-            label="Employment-Related AI"
-            value={usesAiInHiring ? "Yes, employment-related workflows are in scope" : "No employment-related AI workflows selected"}
+            label="Computed risk level"
+            value={`${previewAssessment.severity} (${previewAssessment.risk_score}/100)`}
+          />
+          <ReviewRow
+            label="Federal record overlap"
+            value={previewAssessment.applicable_laws.map((law) => law.law).join(", ")}
           />
         </div>
       </Card>
 
       <Card tone="subtle" className="p-6">
         <div className="grid gap-4 sm:grid-cols-2">
-          <ReviewRow label="AI Systems and Use Cases" value={aiUseCases || "Not provided"} />
+          <ReviewRow label="AI systems and use cases" value={aiUseCases || "Not provided"} />
           <ReviewRow
-            label="System Categories"
+            label="System categories"
             value={selectedCategoryTitles.length > 0 ? selectedCategoryTitles.join(", ") : "None selected"}
           />
+          <ReviewRow label="Training data provenance" value={dataProvenance || "Not provided"} />
           <ReviewRow
-            label="Training Data Provenance"
-            value={dataProvenance || "Not provided"}
-          />
-          <ReviewRow
-            label="Additional Assessment Context"
+            label="Additional assessment context"
             value={additionalContext || "No additional context provided"}
           />
         </div>
@@ -77,27 +73,27 @@ export function ReviewPanel({
       <Card tone="subtle" className="p-6">
         <div className="grid gap-4 sm:grid-cols-2">
           <ReviewRow
-            label="Deployment Profile"
+            label="Deployment profile"
             value={previewAssessment.operational_summary.deployment_profile}
           />
           <ReviewRow
-            label="Review Cadence"
+            label="Review cadence"
             value={previewAssessment.operational_summary.review_cadence}
           />
           <ReviewRow
-            label="Likely Impacted Regulations"
+            label="Likely impacted federal records"
             value={previewAssessment.applicable_laws.map((law) => law.law).join(", ")}
           />
           <ReviewRow
-            label="Required Compliance Actions"
-            value={`${previewAssessment.required_actions.length} actions identified across ${previewAssessment.summary.impacted_regulation_count} regulations`}
+            label="Required compliance actions"
+            value={`${previewAssessment.required_actions.length} actions identified across ${previewAssessment.summary.impacted_regulation_count} federal records`}
           />
         </div>
       </Card>
 
       <Card tone="secondary" className="border-amber-500/20 bg-amber-500/[0.07] p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-300">
-          Sensitive Workflow Notes
+        <p className="text-xs font-semibold tracking-[0.04em] text-amber-300">
+          Sensitive workflow notes
         </p>
         <p className="mt-3 text-sm leading-7 text-slate-200">
           {criticalUseCases || "No sensitive workflows were provided."}

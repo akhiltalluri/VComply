@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { IntakeSidebarProgress } from "@/components/intake/IntakeSidebarProgress";
 import { IntakeStepHeader } from "@/components/intake/IntakeStepHeader";
@@ -9,7 +9,6 @@ import { OptionCard } from "@/components/intake/OptionCard";
 import { ReviewPanel } from "@/components/intake/ReviewPanel";
 import { StepNavigation } from "@/components/intake/StepNavigation";
 import { Card } from "@/components/ui/Card";
-import { CheckboxField } from "@/components/ui/CheckboxField";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -22,6 +21,11 @@ import {
   modelCategories,
   normalizeComplianceAssessment,
 } from "@/lib/mock-data";
+import {
+  COMPLIANCE_INTAKE_DRAFT_KEY,
+  startNewAssessmentWorkspace,
+  storeAssessmentReport,
+} from "@/lib/report-workspace";
 import { parseStoredJson } from "@/lib/storage";
 import type { IntakeDraft } from "@/lib/mock-data";
 
@@ -29,38 +33,38 @@ const steps = [
   {
     id: "company",
     title: "Company Profile",
-    subtitle: "Business footprint and operating context",
+    subtitle: "Business context and operating environment",
     description:
-      "Establish the operating footprint VComply will use to assess jurisdictional exposure, sector expectations, and likely regulatory scope.",
+      "Establish the company context VComply will use to interpret federal legislative overlap, sector expectations, and likely compliance pressure.",
     guidance:
-      "We use this information to determine which jurisdictions, sector expectations, and baseline regulatory obligations may apply.",
+      "We use this information to frame the assessment around the right business environment before mapping current federal legislative records.",
   },
   {
     id: "usage",
     title: "AI Systems and Use Cases",
     subtitle: "Deployments, systems, and affected workflows",
     description:
-      "Describe how AI is used in production so the assessment can distinguish routine automation from consequential decision systems.",
+      "Describe how AI is used in production so the assessment can distinguish general-purpose automation from consequential business workflows.",
     guidance:
-      "This tells VComply which systems may trigger hiring, profiling, transparency, or governance obligations.",
+      "This tells VComply which systems create the strongest overlap with current federal hiring, transparency, accountability, and governance records.",
   },
   {
     id: "risk",
     title: "Risk Context",
-    subtitle: "Sensitive workflows, data sources, and control context",
+    subtitle: "Sensitive workflows, data sources, and review posture",
     description:
-      "Add the details that usually determine whether a deployment falls into heightened regulatory review, including sensitive workflows and data sourcing.",
+      "Add the details that help VComply compute risk, especially where workflows touch hiring, scoring, identity, or other high-sensitivity decisions.",
     guidance:
-      "These details help distinguish routine automation from higher-risk deployments that require deeper compliance controls.",
+      "Risk is computed from your selected systems, use cases, and mapped federal legislative overlap rather than chosen manually.",
   },
   {
     id: "review",
     title: "Assessment Review",
     subtitle: "Confirm assessment inputs before analysis",
     description:
-      "Confirm the submitted information before VComply generates the initial regulatory assessment and recommended actions.",
+      "Confirm the submitted information before VComply generates the initial federal compliance assessment and recommended actions.",
     guidance:
-      "Review the inputs below before VComply generates the initial assessment, impacted regulations, and required actions.",
+      "Review the inputs below before VComply generates the current assessment, mapped federal records, and recommended actions.",
   },
 ];
 
@@ -98,6 +102,7 @@ function parseStoredDataProvenance(value: string) {
 
 export default function IntakePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { authenticated, ready: authReady } = useAuthState();
   const [currentStep, setCurrentStep] = useState(1);
   const [showValidation, setShowValidation] = useState(false);
@@ -107,15 +112,35 @@ export default function IntakePage() {
 
   const [companyName, setCompanyName] = useState("");
   const [industry, setIndustry] = useState("");
-  const [statesOfOperation, setStatesOfOperation] = useState("NY, CA");
-  const [aiUseCases, setAiUseCases] = useState("hiring, candidate screening");
-  const [usesAiInHiring, setUsesAiInHiring] = useState(true);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(["llm", "predictive"]);
+  const [aiUseCases, setAiUseCases] = useState(
+    "candidate screening, recruiter support, and policy summarization"
+  );
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([
+    "hiring-hr-ai",
+    "llm",
+  ]);
   const [criticalUseCases, setCriticalUseCases] = useState(
-    "AI-assisted ranking is used to help screen and prioritize initial hiring candidates."
+    "AI-assisted ranking is used to help prioritize candidates before recruiter review, and summaries are generated for hiring managers."
   );
   const [dataProvenance, setDataProvenance] = useState("");
   const [additionalContext, setAdditionalContext] = useState("");
+  const shouldStartFresh = searchParams.get("new") === "1";
+
+  function resetDraftState() {
+    setCurrentStep(1);
+    setShowValidation(false);
+    setIsSubmitting(false);
+    setSubmissionError("");
+    setCompanyName("");
+    setIndustry("");
+    setAiUseCases("candidate screening, recruiter support, and policy summarization");
+    setSelectedCategories(["hiring-hr-ai", "llm"]);
+    setCriticalUseCases(
+      "AI-assisted ranking is used to help prioritize candidates before recruiter review, and summaries are generated for hiring managers."
+    );
+    setDataProvenance("");
+    setAdditionalContext("");
+  }
 
   const selectedCategoryTitles = useMemo(
     () =>
@@ -129,9 +154,7 @@ export default function IntakePage() {
     () => ({
       company_name: companyName,
       industry,
-      states_of_operation: statesOfOperation,
       ai_use_cases: aiUseCases,
-      uses_ai_in_hiring: usesAiInHiring,
       selected_categories: selectedCategories,
       critical_use_cases: criticalUseCases,
       data_provenance: formatDataProvenance(dataProvenance),
@@ -145,8 +168,6 @@ export default function IntakePage() {
       dataProvenance,
       industry,
       selectedCategories,
-      statesOfOperation,
-      usesAiInHiring,
     ]
   );
 
@@ -166,9 +187,24 @@ export default function IntakePage() {
   }, [authReady, authenticated, router]);
 
   useEffect(() => {
+    if (!authReady || !authenticated || !shouldStartFresh) {
+      return;
+    }
+
+    startNewAssessmentWorkspace();
+    resetDraftState();
+    setDraftReady(true);
+    router.replace("/intake");
+  }, [authReady, authenticated, router, shouldStartFresh]);
+
+  useEffect(() => {
+    if (shouldStartFresh) {
+      return;
+    }
+
     try {
       const parsed = parseStoredJson<Partial<IntakeDraft>>(
-        localStorage.getItem("complianceIntakeDraft")
+        localStorage.getItem(COMPLIANCE_INTAKE_DRAFT_KEY)
       );
 
       if (!parsed) {
@@ -178,23 +214,15 @@ export default function IntakePage() {
 
       setCompanyName(typeof parsed.company_name === "string" ? parsed.company_name : "");
       setIndustry(typeof parsed.industry === "string" ? parsed.industry : "");
-      setStatesOfOperation(
-        typeof parsed.states_of_operation === "string" && parsed.states_of_operation.trim()
-          ? parsed.states_of_operation
-          : "NY, CA"
-      );
       setAiUseCases(
         typeof parsed.ai_use_cases === "string" && parsed.ai_use_cases.trim()
           ? parsed.ai_use_cases
-          : "hiring, candidate screening"
-      );
-      setUsesAiInHiring(
-        typeof parsed.uses_ai_in_hiring === "boolean" ? parsed.uses_ai_in_hiring : true
+          : "candidate screening, recruiter support, and policy summarization"
       );
       setSelectedCategories(
         Array.isArray(parsed.selected_categories) && parsed.selected_categories.length > 0
           ? parsed.selected_categories.filter((item): item is string => typeof item === "string")
-          : ["llm", "predictive"]
+          : ["hiring-hr-ai", "llm"]
       );
       setCriticalUseCases(typeof parsed.critical_use_cases === "string" ? parsed.critical_use_cases : "");
       setDataProvenance(
@@ -204,21 +232,32 @@ export default function IntakePage() {
       );
       setAdditionalContext(typeof parsed.additional_context === "string" ? parsed.additional_context : "");
     } catch {
-      localStorage.removeItem("complianceIntakeDraft");
+      localStorage.removeItem(COMPLIANCE_INTAKE_DRAFT_KEY);
     } finally {
       setDraftReady(true);
     }
-  }, []);
+  }, [shouldStartFresh]);
 
   useEffect(() => {
     if (!draftReady) {
       return;
     }
 
-    localStorage.setItem("complianceIntakeDraft", JSON.stringify(intakeSnapshot));
+    localStorage.setItem(COMPLIANCE_INTAKE_DRAFT_KEY, JSON.stringify(intakeSnapshot));
   }, [draftReady, intakeSnapshot]);
 
-  const requiresCriticalUseCase = usesAiInHiring || selectedCategories.includes("predictive");
+  const requiresCriticalUseCase = selectedCategories.some((category) =>
+    [
+      "hiring-hr-ai",
+      "predictive-analytics",
+      "compliance-monitoring-automation",
+    ].includes(category)
+  );
+  const hasHiringAi =
+    selectedCategories.includes("hiring-hr-ai") ||
+    /(hiring|candidate|recruit|interview|employee|talent)/i.test(
+      `${aiUseCases} ${criticalUseCases} ${additionalContext}`
+    );
 
   function toggleCategory(id: string) {
     setSelectedCategories((current) =>
@@ -231,9 +270,6 @@ export default function IntakePage() {
       return {
         companyName: companyName.trim() ? "" : "Enter the company name.",
         industry: industry.trim() ? "" : "Specify the primary industry context.",
-        statesOfOperation: statesOfOperation.trim()
-          ? ""
-          : "List at least one operating jurisdiction.",
       };
     }
 
@@ -309,14 +345,14 @@ export default function IntakePage() {
     setSubmissionError("");
 
     try {
-      localStorage.setItem("complianceIntakeDraft", JSON.stringify(intakeSnapshot));
+      localStorage.setItem(COMPLIANCE_INTAKE_DRAFT_KEY, JSON.stringify(intakeSnapshot));
 
       const response = await checkApplicability({
-        states: statesOfOperation
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
-        uses_hiring_ai: usesAiInHiring,
+        ai_use_cases: aiUseCases,
+        selected_categories: selectedCategories,
+        critical_use_cases: criticalUseCases.trim() || undefined,
+        states: ["federal-only"],
+        uses_hiring_ai: hasHiringAi,
       });
 
       const normalizedAssessment = normalizeComplianceAssessment(response, intakeSnapshot);
@@ -325,8 +361,8 @@ export default function IntakePage() {
         throw new Error("Invalid assessment response");
       }
 
-      localStorage.setItem("complianceResult", JSON.stringify(normalizedAssessment));
-      localStorage.setItem("complianceIntakeDraft", JSON.stringify(intakeSnapshot));
+      storeAssessmentReport(normalizedAssessment, intakeSnapshot);
+      localStorage.setItem(COMPLIANCE_INTAKE_DRAFT_KEY, JSON.stringify(intakeSnapshot));
       router.push("/dashboard");
     } catch (error) {
       setSubmissionError(
@@ -348,8 +384,8 @@ export default function IntakePage() {
   }
 
   function loadDemoAssessment() {
-    localStorage.setItem("complianceIntakeDraft", JSON.stringify(intakeSnapshot));
-    localStorage.setItem("complianceResult", JSON.stringify(previewAssessment));
+    localStorage.setItem(COMPLIANCE_INTAKE_DRAFT_KEY, JSON.stringify(intakeSnapshot));
+    storeAssessmentReport(previewAssessment, intakeSnapshot);
     router.push("/dashboard");
   }
 
@@ -371,7 +407,10 @@ export default function IntakePage() {
               guidance={currentStepConfig.guidance}
             />
 
-            <form onSubmit={handleSubmit} className="mt-10 space-y-8">
+            <form
+              onSubmit={handleSubmit}
+              className={`space-y-8 ${currentStep === 4 ? "mt-12" : "mt-10"}`}
+            >
               {currentStep === 1 ? (
                 <div className="space-y-6">
                   <Card tone="subtle" className="p-6">
@@ -405,20 +444,6 @@ export default function IntakePage() {
                           placeholder="Financial Services"
                         />
                       </FormField>
-
-                      <FormField
-                        label="States of Operation"
-                        htmlFor="states"
-                        helperText="List the U.S. states or jurisdictions where the assessed entity operates, for example NY, CA, IL."
-                        error={showValidation ? stepErrors.statesOfOperation : ""}
-                      >
-                        <Input
-                          id="states"
-                          value={statesOfOperation}
-                          onChange={(event) => setStatesOfOperation(event.target.value)}
-                          placeholder="NY, CA"
-                        />
-                      </FormField>
                     </div>
                   </Card>
                 </div>
@@ -430,23 +455,16 @@ export default function IntakePage() {
                     <FormField
                       label="AI Systems and Use Cases"
                       htmlFor="ai-use-cases"
-                      helperText="Describe the business workflows where AI is currently used so the assessment can infer likely regulatory triggers."
+                      helperText="Describe the business workflows where AI is currently used so the assessment can infer likely federal legislative overlap."
                       error={showValidation ? stepErrors.aiUseCases : ""}
                     >
                       <Input
                         id="ai-use-cases"
                         value={aiUseCases}
                         onChange={(event) => setAiUseCases(event.target.value)}
-                        placeholder="hiring, chatbots, profiling"
+                        placeholder="candidate screening, support automation, workflow summarization"
                       />
                     </FormField>
-
-                    <CheckboxField
-                      checked={usesAiInHiring}
-                      onChange={(event) => setUsesAiInHiring(event.target.checked)}
-                      label="AI is used in employment-related decisions"
-                      description="Enable this if AI informs candidate screening, scoring, interview review, promotion, or other employment-related decisions."
-                    />
                   </Card>
 
                   <Card tone="subtle" className="p-6">
@@ -480,18 +498,63 @@ export default function IntakePage() {
 
               {currentStep === 3 ? (
                 <div className="space-y-6">
+                  <Card tone="subtle" className="p-6">
+                    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_260px] lg:items-start">
+                      <div>
+                        <p className="text-sm font-medium text-slate-200">Computed risk preview</p>
+                        <p className="mt-2 text-sm leading-7 text-slate-400">
+                          VComply computes risk from your selected AI categories, described use
+                          cases, and the current overlap with federal legislative records. This is
+                          a preview of the risk posture that will carry into the dashboard.
+                        </p>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {previewAssessment.applicable_laws.map((law) => (
+                            <span
+                              key={law.law}
+                              className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-xs font-medium text-slate-300"
+                            >
+                              {law.law}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <Card
+                        tone={
+                          previewAssessment.severity === "HIGH"
+                            ? "secondary"
+                            : previewAssessment.severity === "MEDIUM"
+                              ? "subtle"
+                              : "primary"
+                        }
+                        className="border-slate-800/80 bg-slate-950/60 p-5"
+                      >
+                        <p className="text-sm font-medium text-slate-300">Current computed risk</p>
+                        <p className="mt-3 text-3xl font-semibold text-slate-100">
+                          {previewAssessment.severity}
+                        </p>
+                        <p className="mt-2 text-sm text-slate-400">
+                          {previewAssessment.risk_score}/100 score
+                        </p>
+                        <p className="mt-4 text-sm leading-6 text-slate-300">
+                          {previewAssessment.summary.narrative}
+                        </p>
+                      </Card>
+                    </div>
+                  </Card>
+
                   <Card tone="secondary" className="border-amber-500/20 bg-amber-500/[0.07] p-6">
                     <FormField
                       label="Critical Use Cases"
                       htmlFor="critical-use-cases"
-                      helperText="Document any hiring, profiling, law-enforcement, or other high-impact workflows that require closer regulatory review."
+                      helperText="Document any sensitive workflows that could affect employment, scoring, identity, or other high-impact decisions."
                       error={showValidation ? stepErrors.criticalUseCases : ""}
                     >
                       <TextArea
                         id="critical-use-cases"
                         value={criticalUseCases}
                         onChange={(event) => setCriticalUseCases(event.target.value)}
-                        placeholder="Describe any sensitive workflows, such as candidate screening, consequential profiling, or critical infrastructure decision support."
+                        placeholder="Describe any sensitive workflows, such as candidate screening, underwriting support, identity checks, or high-impact prioritization."
                       />
                     </FormField>
                   </Card>
@@ -540,18 +603,27 @@ export default function IntakePage() {
               ) : null}
 
               {currentStep === 4 ? (
-                <ReviewPanel
-                  companyName={companyName}
-                  industry={industry}
-                  statesOfOperation={statesOfOperation}
-                  aiUseCases={aiUseCases}
-                  usesAiInHiring={usesAiInHiring}
-                  selectedCategoryTitles={selectedCategoryTitles}
-                  criticalUseCases={criticalUseCases}
-                  dataProvenance={formatDataProvenance(dataProvenance)}
-                  additionalContext={additionalContext}
-                  previewAssessment={previewAssessment}
-                />
+                <div className="space-y-7 pt-6">
+                  <Card tone="subtle" className="max-w-3xl border-slate-800/80 bg-slate-950/60 p-5">
+                    <p className="text-sm font-medium text-slate-200">Review before generation</p>
+                    <p className="mt-2 text-sm leading-7 text-slate-400">
+                      This summary is a final check before VComply promotes the assessment into the
+                      dashboard as the active report. Previous reports stay available in Assessment
+                      History.
+                    </p>
+                  </Card>
+
+                  <ReviewPanel
+                    companyName={companyName}
+                    industry={industry}
+                    aiUseCases={aiUseCases}
+                    selectedCategoryTitles={selectedCategoryTitles}
+                    criticalUseCases={criticalUseCases}
+                    dataProvenance={formatDataProvenance(dataProvenance)}
+                    additionalContext={additionalContext}
+                    previewAssessment={previewAssessment}
+                  />
+                </div>
               ) : null}
 
               {submissionError ? (

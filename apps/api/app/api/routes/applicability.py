@@ -1,7 +1,4 @@
-"""
-Applicability checks: map company facts (states, AI use) to candidate laws.
-Replace mock logic in the service with rules engine + law corpus later.
-"""
+"""Applicability checks: map intake facts to candidate federal legislative records."""
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,15 +9,27 @@ from app.schemas.applicability import (
     ApplicabilityCheckResponse,
     SourceLawItem,
 )
-from app.services.applicability_engine import run_applicability_check
+from app.services.applicability_engine import derive_focus_flags, run_applicability_check
 from app.services.law_service import normalize_legislative_status
 
 router = APIRouter()
 
 
 async def fetch_source_laws(db: AsyncSession, payload: ApplicabilityCheckRequest) -> list[SourceLawItem]:
-    states_upper = {state.strip().upper() for state in payload.states}
-    prefers_hiring = payload.uses_hiring_ai
+    flags = derive_focus_flags(payload)
+    primary_tag = ""
+    secondary_tag = ""
+
+    if flags["has_hiring"]:
+        primary_tag = "hiring"
+        secondary_tag = "transparency"
+    elif flags["has_vision"]:
+        primary_tag = "biometrics"
+        secondary_tag = "transparency"
+    elif flags["has_scoring"] or flags["has_recommendation"] or flags["has_general"]:
+        primary_tag = "transparency"
+        secondary_tag = "privacy"
+
     rows = await db.execute(
         text(
             """
@@ -38,24 +47,26 @@ async def fetch_source_laws(db: AsyncSession, payload: ApplicabilityCheckRequest
             from public.law_documents
             where source = 'congress_gov'
               and (
-                :prefers_hiring = false
-                or 'hiring' = any(coalesce(applicability_tags, '{}'))
-                or lower(coalesce(summary, '')) like '%hiring%'
+                :primary_tag = ''
+                or :primary_tag = any(coalesce(applicability_tags, '{}'))
+                or (:secondary_tag != '' and :secondary_tag = any(coalesce(applicability_tags, '{}')))
+                or (:employment_focus = true and lower(coalesce(summary, '')) like '%employment%')
               )
             order by
+              case when :primary_tag != '' and :primary_tag = any(coalesce(applicability_tags, '{}')) then 3 else 0 end desc,
+              case when :secondary_tag != '' and :secondary_tag = any(coalesce(applicability_tags, '{}')) then 2 else 0 end desc,
               case when upper(coalesce(risk, 'MEDIUM')) = 'HIGH' then 2 else 1 end desc,
               coalesce(latest_action_date, introduced_at) desc nulls last
             limit 5
             """
         ),
-        {"prefers_hiring": prefers_hiring},
+        {
+            "primary_tag": primary_tag,
+            "secondary_tag": secondary_tag,
+            "employment_focus": flags["has_hiring"],
+        },
     )
     mappings = rows.mappings().all()
-
-    # Federal laws are broadly applicable for US operations; keep additive + conservative.
-    include_federal = bool(states_upper)
-    if not include_federal:
-        return []
 
     return [
         SourceLawItem(
@@ -82,8 +93,9 @@ async def check_applicability(
     payload: ApplicabilityCheckRequest,
     db: AsyncSession = Depends(get_db),
 ) -> ApplicabilityCheckResponse:
-    result = run_applicability_check(payload)
     source_laws = await fetch_source_laws(db, payload)
+    result = run_applicability_check(payload, source_laws)
+    flags = derive_focus_flags(payload)
 
     first_law = result.applicable_laws[0] if result.applicable_laws else None
 
@@ -97,8 +109,8 @@ async def check_applicability(
             """
         ),
         {
-            "states": ",".join(payload.states),
-            "uses_hiring_ai": payload.uses_hiring_ai,
+            "states": "federal-only",
+            "uses_hiring_ai": flags["has_hiring"],
             "risk_score": result.risk_score,
             "law": first_law.law if first_law else None,
             "risk": first_law.risk if first_law else None,

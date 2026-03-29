@@ -6,7 +6,7 @@ import { StartAssessmentButton } from "@/components/auth/StartAssessmentButton";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { NavLink } from "@/components/layout/NavLink";
 import { clearAuthState, useAuthState } from "@/lib/auth";
-import { BrandMark } from "@/components/ui/BrandMark";
+import { BrandLockup } from "@/components/ui/BrandLockup";
 import { Button } from "@/components/ui/Button";
 
 function ArrowLeftIcon() {
@@ -51,11 +51,8 @@ export function AppHeader() {
     return (
       <header className="sticky top-0 z-40 border-b border-white/8 bg-slate-950/92 backdrop-blur-xl">
         <PageContainer className="flex items-center justify-between py-4">
-          <Link href="/" className="inline-flex items-center gap-4">
-            <BrandMark />
-            <span className="text-[1.55rem] font-semibold tracking-tight text-white sm:text-[2rem]">
-              VComply
-            </span>
+          <Link href="/" aria-label="VComply home">
+            <BrandLockup wordmarkClassName="h-9 sm:h-10" />
           </Link>
 
           <div className="flex items-center gap-3 sm:gap-4">
@@ -97,11 +94,8 @@ export function AppHeader() {
     return (
       <header className="sticky top-0 z-40 border-b border-white/8 bg-slate-950/92 backdrop-blur-xl">
         <PageContainer className="flex items-center justify-between py-4">
-          <Link href="/" className="inline-flex items-center gap-4">
-            <BrandMark />
-            <span className="text-[1.55rem] font-semibold tracking-tight text-white sm:text-[2rem]">
-              VComply
-            </span>
+          <Link href="/" aria-label="VComply home">
+            <BrandLockup wordmarkClassName="h-9 sm:h-10" />
           </Link>
 
           <div className="flex items-center gap-3">
@@ -133,19 +127,16 @@ export function AppHeader() {
   }
 
   const appNavigation = [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/intake", label: "Intake" },
-    { href: "/laws", label: "Laws Explorer" },
+    { href: "/intake?new=1", match: "/intake", label: "Intake" },
+    { href: "/dashboard", match: "/dashboard", label: "Dashboard" },
+    { href: "/laws", match: "/laws", label: "Laws" },
   ];
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/8 bg-slate-950/92 backdrop-blur-xl">
         <PageContainer className="flex items-center justify-between py-4">
-          <Link href="/" className="inline-flex items-center gap-4">
-            <BrandMark />
-            <span className="text-[1.55rem] font-semibold tracking-tight text-white sm:text-[2rem]">
-              VComply
-            </span>
+          <Link href="/" aria-label="VComply home">
+            <BrandLockup wordmarkClassName="h-9 sm:h-10" />
           </Link>
 
         <div className="flex items-center gap-4 sm:gap-8">
@@ -156,7 +147,7 @@ export function AppHeader() {
                   key={item.href}
                   href={item.href}
                   label={item.label}
-                  active={pathname.startsWith(item.href)}
+                  active={pathname.startsWith(item.match)}
                 />
               );
             })}
@@ -170,7 +161,7 @@ export function AppHeader() {
             ) : null}
 
             <Button
-              href={signedIn ? "/intake" : "/login"}
+              href={signedIn ? "/intake?new=1" : "/login"}
               variant="primary"
               size="md"
               className="text-sm sm:text-lg"

@@ -1,4 +1,4 @@
-import { BrandMark } from "@/components/ui/BrandMark";
+import { BrandLockup } from "@/components/ui/BrandLockup";
 import { Card } from "@/components/ui/Card";
 
 type IntakeStep = {
@@ -51,13 +51,11 @@ export function IntakeSidebarProgress({
   return (
     <aside className="flex h-full flex-col justify-between rounded-[28px] border border-slate-800 bg-slate-900 px-6 py-7 lg:px-7 lg:py-8">
       <div className="space-y-8">
-        <div className="flex items-center gap-4">
-          <BrandMark />
-          <div>
-            <p className="text-[1.8rem] font-semibold tracking-tight text-white">VComply</p>
-            <p className="text-sm text-slate-400">AI regulatory assessment</p>
-          </div>
-        </div>
+        <BrandLockup
+          subtitle="AI regulatory assessment"
+          wordmarkClassName="h-10"
+          subtitleClassName="mt-1"
+        />
 
         <div className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
@@ -104,8 +102,13 @@ export function IntakeSidebarProgress({
         </div>
       </div>
 
-      <Card tone="secondary" className="border-amber-500/20 bg-amber-500/[0.06] p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-300">
+      <Card
+        tone="secondary"
+        className={`border-amber-500/20 bg-amber-500/[0.06] p-5 ${
+          currentStep === steps.length ? "mt-8" : "mt-6"
+        }`}
+      >
+        <p className="text-xs font-semibold tracking-[0.04em] text-amber-300">
           Why this input matters
         </p>
         <p className="mt-3 text-sm leading-7 text-slate-300">

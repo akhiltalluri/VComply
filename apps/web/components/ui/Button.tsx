@@ -40,7 +40,7 @@ const sizeClasses: Record<ButtonSize, string> = {
 
 function sharedClassName(variant: ButtonVariant, size: ButtonSize, className?: string) {
   return cn(
-    "inline-flex items-center justify-center rounded-xl font-medium transition duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:opacity-70",
+    "inline-flex items-center justify-center rounded-xl font-medium transition duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500/10 active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-70 motion-reduce:transform-none",
     variantClasses[variant],
     sizeClasses[size],
     className

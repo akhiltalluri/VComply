@@ -4,12 +4,17 @@ from pathlib import Path
 from dotenv import load_dotenv
 from supabase import Client, create_client
 
-load_dotenv(dotenv_path=Path(__file__).resolve().parents[2] / ".env")
+ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
 
-supabase_url = os.getenv("SUPABASE_URL")
-supabase_key = os.getenv("SUPABASE_KEY")
+
+def get_supabase_env() -> tuple[str | None, str | None]:
+    load_dotenv(dotenv_path=ENV_PATH, override=False)
+    return os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY")
+
 
 def get_supabase_client() -> Client:
+    supabase_url, supabase_key = get_supabase_env()
+
     if not supabase_url:
         raise RuntimeError("SUPABASE_URL is not set")
 

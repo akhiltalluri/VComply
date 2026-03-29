@@ -95,7 +95,7 @@ export default function LoginPage() {
   return (
     <PageContainer className="py-12 sm:py-16 lg:py-20">
       <div className="mx-auto grid min-h-[calc(100vh-11rem)] max-w-6xl items-center gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,0.8fr)]">
-        <div className="space-y-8">
+        <div className="motion-enter space-y-8">
           <Badge tone="blue" className="px-4 py-2 text-sm normal-case tracking-[0.12em] text-sky-200">
             Compliance workspace access
           </Badge>
@@ -116,7 +116,7 @@ export default function LoginPage() {
 
           <div className="grid gap-4 sm:grid-cols-3">
             {workspaceSignals.map((signal) => (
-              <Card key={signal.title} tone="subtle" className="p-5">
+              <Card key={signal.title} tone="subtle" className="motion-lift p-5">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-sky-500/15 bg-sky-500/10 text-sky-300">
                   <ShieldIcon />
                 </div>
@@ -127,7 +127,10 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <Card tone="primary" className="mx-auto w-full max-w-xl p-7 sm:p-8">
+        <Card
+          tone="primary"
+          className="motion-enter motion-enter-delay-2 mx-auto w-full max-w-xl p-7 sm:p-8"
+        >
           <div className="space-y-2">
             <p className="text-sm font-medium uppercase tracking-[0.18em] text-slate-500">
               Workspace Sign-in
@@ -198,7 +201,7 @@ export default function LoginPage() {
             </div>
 
             {errorMessage ? (
-              <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+              <div className="motion-message rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                 {errorMessage}
               </div>
             ) : null}
