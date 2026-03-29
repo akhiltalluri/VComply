@@ -689,8 +689,13 @@ export function buildLawApplicabilityExplanation(
   const useCaseText = context?.aiUseCases?.toLowerCase() ?? "";
   const selectedCategoryTitles =
     context?.selectedCategories
-      ?.map((categoryId) => modelCategoryLookup.get(categoryId as CategoryId)?.title)
-      .filter((value): value is string => Boolean(value)) ?? [];
+      ?.reduce<string[]>((titles, categoryId) => {
+        const title = modelCategoryLookup.get(categoryId as CategoryId)?.title;
+        if (title) {
+          titles.push(title);
+        }
+        return titles;
+      }, []) ?? [];
   const combinedScope = [useCaseText, ...selectedCategoryTitles.map((title) => title.toLowerCase())].join(" ");
 
   if (law.category === "Employment AI" || /hiring|candidate|recruit|employment/.test(combinedScope)) {

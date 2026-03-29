@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { IntakeSidebarProgress } from "@/components/intake/IntakeSidebarProgress";
 import { IntakeStepHeader } from "@/components/intake/IntakeStepHeader";
@@ -102,13 +102,13 @@ function parseStoredDataProvenance(value: string) {
 
 export default function IntakePage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { authenticated, ready: authReady } = useAuthState();
   const [currentStep, setCurrentStep] = useState(1);
   const [showValidation, setShowValidation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState("");
   const [draftReady, setDraftReady] = useState(false);
+  const [shouldStartFresh, setShouldStartFresh] = useState(false);
 
   const [companyName, setCompanyName] = useState("");
   const [industry, setIndustry] = useState("");
@@ -124,7 +124,14 @@ export default function IntakePage() {
   );
   const [dataProvenance, setDataProvenance] = useState("");
   const [additionalContext, setAdditionalContext] = useState("");
-  const shouldStartFresh = searchParams.get("new") === "1";
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    setShouldStartFresh(new URLSearchParams(window.location.search).get("new") === "1");
+  }, []);
 
   function resetDraftState() {
     setCurrentStep(1);
