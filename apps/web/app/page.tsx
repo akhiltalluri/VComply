@@ -9,19 +9,19 @@ const valueProps = [
   {
     title: "Regulatory Mapping",
     description:
-      "Map deployed AI systems, use cases, and jurisdictions to the laws most likely to apply before legal exposure becomes operational risk.",
+      "Map deployed AI systems, business workflows, and operating jurisdictions to the regulations most likely to apply before exposure turns into reactive legal work.",
     icon: "map",
   },
   {
     title: "Risk Visibility",
     description:
-      "Surface high-risk obligations across hiring, profiling, and consumer-facing AI with clear severity signals your leadership team can act on.",
+      "See where hiring, profiling, consumer-facing AI, and sensitive decisioning create the highest regulatory pressure across jurisdictions and enforcement regimes.",
     icon: "risk",
   },
   {
     title: "Actionable Next Steps",
     description:
-      "Convert dense regulatory requirements into prioritized actions, owners, and compliance workstreams instead of disconnected legal notes.",
+      "Turn regulatory obligations into concrete compliance workstreams: audits, notices, governance controls, documentation, and operational remediation.",
     icon: "actions",
   },
 ];
@@ -29,21 +29,75 @@ const valueProps = [
 const workflowSteps = [
   {
     step: "01",
-    title: "Enter company footprint",
+    title: "Enter Company Footprint",
     description:
-      "Capture where you operate, what models you deploy, and where AI touches business-critical workflows.",
+      "Capture where you operate, which AI systems are deployed, and which workflows are materially affected.",
   },
   {
     step: "02",
-    title: "Identify applicable AI laws",
+    title: "Identify Applicable Regulations",
     description:
-      "VComply maps your deployment details against evolving global regulatory frameworks and enforcement triggers.",
+      "VComply maps that deployment profile to relevant AI, privacy, and automated decision-making rules across jurisdictions.",
   },
   {
     step: "03",
-    title: "Get risk assessment and actions",
+    title: "Generate Risk and Action Plan",
     description:
-      "Review risk score, triggered regulations, and concrete next steps for compliance, legal, and operations teams.",
+      "Review triggered laws, regulatory severity, and the concrete actions legal, risk, and operations teams should take next.",
+  },
+];
+
+const heroSignals = [
+  {
+    label: "Primary Use Case",
+    value: "Map AI deployments to applicable regulations and control requirements",
+  },
+  {
+    label: "Jurisdictional Coverage",
+    value: "EU AI Act, GDPR, CPPA rules, hiring laws, and emerging state-level ADMT obligations",
+  },
+  {
+    label: "Assessment Output",
+    value: "Regulatory risk signals, impacted laws, and required compliance actions",
+  },
+];
+
+const dashboardPreview = [
+  {
+    title: "Regulatory Risk Level",
+    subtitle: "Hiring and profiling workflows are creating immediate regulatory pressure",
+    badge: "High",
+    tone: "high" as const,
+  },
+  {
+    title: "Required Compliance Actions",
+    subtitle: "Bias audit, candidate notice controls, and governance evidence review",
+    badge: "3 Open",
+    tone: "neutral" as const,
+  },
+  {
+    title: "Impacted Regulations",
+    subtitle: "NYC Local Law 144, Illinois AI Video Interview Act, and GDPR Article 22",
+    badge: "3 Laws",
+    tone: "neutral" as const,
+  },
+];
+
+const lawPreview = [
+  {
+    name: "NYC Local Law 144",
+    detail: "Bias audit and notice duties for automated hiring tools",
+    risk: "High Risk",
+  },
+  {
+    name: "Illinois AI Video Interview Act",
+    detail: "Notice, consent, and deletion controls for interview analysis",
+    risk: "Medium Risk",
+  },
+  {
+    name: "GDPR Article 22",
+    detail: "Automated decision-making safeguards and human review obligations",
+    risk: "Medium Risk",
   },
 ];
 
@@ -60,7 +114,10 @@ function ValueIcon({ kind }: { kind: string }) {
   if (kind === "risk") {
     return (
       <svg viewBox="0 0 24 24" className="h-6 w-6 stroke-sky-400 stroke-[1.8]">
-        <path d="M12 3 4.5 6v5.2c0 4.7 2.8 8.8 7.5 10.8 4.7-2 7.5-6.1 7.5-10.8V6z" fill="none" />
+        <path
+          d="M12 3 4.5 6v5.2c0 4.7 2.8 8.8 7.5 10.8 4.7-2 7.5-6.1 7.5-10.8V6z"
+          fill="none"
+        />
         <path d="M12 8v4m0 3h.01" fill="none" />
       </svg>
     );
@@ -74,71 +131,90 @@ function ValueIcon({ kind }: { kind: string }) {
   );
 }
 
-function MiniMetric({
-  label,
-  value,
-  tone = "neutral",
-}: {
-  label: string;
-  value: string;
-  tone?: "neutral" | "high";
-}) {
+function SignalPanel({ label, value }: { label: string; value: string }) {
   return (
-    <InsetPanel tone={tone === "high" ? "red" : "default"} className="px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">{label}</p>
-      <p className="mt-2 text-base font-medium text-slate-300">{value}</p>
+    <InsetPanel className="px-4 py-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</p>
+      <p className="mt-2 text-sm leading-6 text-slate-300">{value}</p>
     </InsetPanel>
+  );
+}
+
+function PreviewBadge({ children, tone = "neutral" }: { children: string; tone?: "neutral" | "high" }) {
+  if (tone === "high") {
+    return (
+      <span className="rounded-lg border border-red-500/20 bg-red-500/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-red-300">
+        {children}
+      </span>
+    );
+  }
+
+  return (
+    <span className="rounded-lg border border-slate-700 bg-slate-950/70 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-300">
+      {children}
+    </span>
   );
 }
 
 export default function HomePage() {
   return (
     <div className="pb-24">
-      <PageContainer className="pt-20 sm:pt-24 lg:pt-28">
+      <PageContainer className="pt-16 sm:pt-20 lg:pt-24">
         <section className="mx-auto flex max-w-6xl flex-col items-center text-center">
-          <div className="inline-flex items-center gap-3 rounded-full border border-sky-500/20 bg-sky-500/10 px-5 py-2 text-sm font-medium uppercase tracking-[0.24em] text-sky-300">
-            <span className="h-2.5 w-2.5 rounded-full bg-sky-400 shadow-[0_0_16px_rgba(56,189,248,0.8)]" />
-            Real-Time AI Compliance Intelligence
-          </div>
+          <Badge tone="blue" className="px-4 py-2 text-sm normal-case tracking-[0.12em] text-sky-200">
+            Assessment engine active for AI regulatory review
+          </Badge>
 
-          <div className="mt-10 max-w-5xl space-y-7">
-            <h1 className="text-[3.8rem] font-semibold tracking-[-0.05em] text-white sm:text-[5rem] lg:text-[6.2rem] lg:leading-[1.02]">
-              Understand your
+          <div className="mt-8 max-w-5xl space-y-6">
+            <h1 className="text-[3rem] font-semibold tracking-[-0.055em] text-white sm:text-[4.35rem] lg:text-[5.8rem] lg:leading-[1.01]">
+              Understand which
               <br />
               <span className="bg-gradient-to-r from-sky-400 to-blue-500 bg-clip-text text-transparent">
-                AI regulatory exposure.
+                AI regulations apply
               </span>
+              <br />
+              to your company.
             </h1>
 
-            <p className="mx-auto max-w-4xl text-[1.15rem] leading-7 text-slate-300 sm:text-[1.35rem] sm:leading-8">
-              VComply maps company AI usage, jurisdictions, and critical workflows to applicable
-              regulations, giving legal and compliance teams a clear view of risk exposure and the
-              next actions required to stay ahead.
+            <p className="mx-auto max-w-4xl text-[1.05rem] leading-7 text-slate-300 sm:text-[1.25rem] sm:leading-8">
+              VComply helps companies understand which AI regulations apply to their deployments,
+              where the most meaningful risk sits across jurisdictions, and which compliance
+              actions should be prioritized next.
             </p>
 
-            <div className="flex flex-col items-center justify-center gap-4 pt-3 sm:flex-row">
-              <Button href="/intake" size="lg" className="min-w-[240px] text-lg">
+            <div className="flex w-full flex-col items-center justify-center gap-4 pt-2 sm:flex-row">
+              <Button href="/intake" size="lg" className="w-full max-w-[320px] text-base sm:min-w-[240px] sm:text-lg">
                 Start Assessment
               </Button>
-              <Button href="/laws" variant="secondary" size="lg" className="min-w-[220px] text-lg">
+              <Button
+                href="/laws"
+                variant="secondary"
+                size="lg"
+                className="w-full max-w-[320px] text-base sm:min-w-[220px] sm:text-lg"
+              >
                 Explore Laws
               </Button>
             </div>
+
+            <p className="mx-auto max-w-2xl text-sm leading-6 text-slate-400">
+              Start with a short intake. VComply then identifies likely regulations, surfaces the
+              highest-risk gaps, and turns them into a concrete compliance action plan.
+            </p>
           </div>
 
-          <div className="mt-14 grid w-full max-w-5xl gap-4 sm:grid-cols-3">
-            <MiniMetric label="Coverage" value="EU, US, and state-level AI obligations" />
-            <MiniMetric label="Primary Use" value="Map deployments to laws and enforcement risk" />
-            <MiniMetric label="Priority Signal" value="High-risk workflows flagged instantly" tone="high" />
+          <div className="mt-14 grid w-full max-w-5xl gap-4 lg:grid-cols-3">
+            {heroSignals.map((signal) => (
+              <SignalPanel key={signal.label} label={signal.label} value={signal.value} />
+            ))}
           </div>
         </section>
       </PageContainer>
 
-      <PageContainer id="features" className="mt-24 space-y-10">
+      <PageContainer id="features" className="mt-20 space-y-10 sm:mt-24">
         <SectionHeader
-          kicker="Core Capabilities"
-          title="Built for teams that need clarity, not legal guesswork."
-          subtitle="A focused product workflow for understanding where AI deployments create exposure and what to do next."
+          kicker="What The Product Delivers"
+          title="A compliance workflow built for teams that need defensible answers."
+          subtitle="VComply shows which regulations matter, why they apply, and what operational work is required across active AI deployments."
           className="max-w-4xl"
         />
 
@@ -148,22 +224,22 @@ export default function HomePage() {
               <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-sky-500/10 bg-slate-900">
                 <ValueIcon kind={feature.icon} />
               </div>
-              <h3 className="mt-10 text-[1.7rem] font-semibold tracking-tight text-white">
+              <h3 className="mt-8 text-[1.5rem] font-semibold tracking-tight text-white">
                 {feature.title}
               </h3>
-              <p className="mt-4 text-lg leading-8 text-slate-400">{feature.description}</p>
+              <p className="mt-3 text-base leading-7 text-slate-400">{feature.description}</p>
             </Card>
           ))}
         </div>
       </PageContainer>
 
-      <PageContainer className="mt-24">
-        <div className="grid gap-8 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+      <PageContainer id="workflow" className="mt-20 sm:mt-24">
+        <div className="grid gap-8 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
           <Card tone="subtle" className="p-8 sm:p-10">
             <SectionHeader
               kicker="How It Works"
-              title="A clean path from intake to compliance action."
-              subtitle="Designed to help enterprise teams move from uncertainty to a usable compliance operating picture."
+              title="A straightforward path from company footprint to compliance action."
+              subtitle="The workflow is built for enterprise teams that need an operating view of AI regulatory exposure, not abstract legal commentary."
               className="max-w-3xl"
             />
 
@@ -171,7 +247,7 @@ export default function HomePage() {
               {workflowSteps.map((item) => (
                 <InsetPanel key={item.step} className="px-5 py-5">
                   <div className="flex items-start gap-4">
-                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-sky-500/20 bg-sky-500/10 text-sm font-semibold tracking-[0.18em] text-sky-300">
+                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-sky-500/20 bg-sky-500/10 text-sm font-semibold tracking-[0.14em] text-sky-300">
                       {item.step}
                     </span>
                     <div>
@@ -186,90 +262,82 @@ export default function HomePage() {
             </div>
           </Card>
 
-          <Card tone="primary" className="overflow-hidden p-0">
-            <div className="border-b border-white/8 px-7 py-5">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-500">
-                    Assessment Preview
-                  </p>
-                  <h2 className="mt-2 text-2xl font-semibold text-white">
-                    AI Compliance Snapshot
-                  </h2>
-                </div>
-                <Badge tone="blue" className="px-3 py-2 text-sm normal-case tracking-normal">
-                  Live View
-                </Badge>
-              </div>
-            </div>
+          <Card id="preview" tone="primary" className="p-8 sm:p-10">
+            <SectionHeader
+              kicker="Platform Preview"
+              title="A product surface built for compliance teams."
+              subtitle="See both sides of the workflow: operational risk in Mission Control and structured regulatory analysis in the Laws Explorer."
+              className="max-w-3xl"
+            />
 
-            <div className="space-y-6 px-7 py-7">
-              <div className="grid gap-4 sm:grid-cols-3">
-                <MiniMetric label="Company Footprint" value="US, EU, hiring + support AI" />
-                <MiniMetric label="Applicable Laws" value="EU AI Act, GDPR, CPRA" />
-                <MiniMetric label="Risk Score" value="84 / 100" tone="high" />
-              </div>
-
+            <div className="mt-10 grid gap-5 lg:grid-cols-2">
               <InsetPanel className="p-5">
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      High Priority
+                    <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      Mission Control
                     </p>
                     <h3 className="mt-2 text-xl font-semibold text-white">
-                      High-risk hiring workflow detected
+                      Regulatory risk, obligations, and work in motion
                     </h3>
                   </div>
-                  <span className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.22em] text-red-300">
-                    High Risk
-                  </span>
+                  <Badge tone="blue" className="px-3 py-1.5 text-xs normal-case tracking-normal">
+                    Dashboard
+                  </Badge>
                 </div>
-                <p className="mt-4 text-base leading-8 text-slate-400">
-                  Resume screening and profiling signals indicate likely obligations under the EU
-                  AI Act and automated decisioning rules.
-                </p>
+
+                <div className="mt-5 space-y-3">
+                  {dashboardPreview.map((item) => (
+                    <div
+                      key={item.title}
+                      className="rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-slate-200">{item.title}</p>
+                          <p className="mt-2 text-sm leading-6 text-slate-400">{item.subtitle}</p>
+                        </div>
+                        <PreviewBadge tone={item.tone}>{item.badge}</PreviewBadge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </InsetPanel>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <InsetPanel className="p-5">
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    Triggered Laws
-                  </p>
-                  <div className="mt-4 space-y-3">
-                    {["EU AI Act", "GDPR Article 22", "CCPA / CPRA"].map((law) => (
-                      <InsetPanel
-                        key={law}
-                        className="flex items-center justify-between rounded-xl bg-white/[0.02] px-4 py-3"
-                      >
-                        <span className="text-sm font-medium text-slate-200">{law}</span>
-                        <span className="text-xs uppercase tracking-[0.18em] text-slate-500">
-                          Active
-                        </span>
-                      </InsetPanel>
-                    ))}
+              <InsetPanel className="p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      Regulatory Intelligence
+                    </p>
+                    <h3 className="mt-2 text-xl font-semibold text-white">
+                      Searchable regulatory analysis
+                    </h3>
                   </div>
-                </InsetPanel>
+                  <Badge tone="blue" className="px-3 py-1.5 text-xs normal-case tracking-normal">
+                    Laws Explorer
+                  </Badge>
+                </div>
 
-                <InsetPanel className="p-5">
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    Recommended Actions
-                  </p>
-                  <div className="mt-4 space-y-3">
-                    {[
-                      "Conduct bias audit for hiring model",
-                      "Document human review controls",
-                      "Update profiling disclosures",
-                    ].map((item, index) => (
-                      <div key={item} className="flex gap-3 rounded-xl bg-white/[0.02] px-4 py-3">
-                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/10 text-xs font-semibold text-blue-300">
-                          {index + 1}
-                        </span>
-                        <span className="text-sm leading-6 text-slate-300">{item}</span>
+                <div className="mt-5 space-y-3">
+                  {lawPreview.map((law) => (
+                    <div
+                      key={law.name}
+                      className="rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-slate-100">{law.name}</p>
+                          <p className="mt-2 text-sm leading-6 text-slate-400">{law.detail}</p>
+                        </div>
+                        <PreviewBadge tone={law.risk === "High Risk" ? "high" : "neutral"}>
+                          {law.risk}
+                        </PreviewBadge>
                       </div>
-                    ))}
-                  </div>
-                </InsetPanel>
-              </div>
+                    </div>
+                  ))}
+                </div>
+              </InsetPanel>
             </div>
           </Card>
         </div>

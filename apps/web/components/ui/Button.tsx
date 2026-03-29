@@ -26,11 +26,11 @@ type ButtonProps = ButtonAsButton | ButtonAsLink;
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "border border-blue-500 bg-blue-500 text-slate-950 shadow-[0_14px_36px_rgba(37,99,235,0.18)] hover:bg-blue-400 hover:border-blue-400",
+    "border border-blue-500 bg-blue-500 text-slate-950 shadow-[0_14px_36px_rgba(37,99,235,0.18)] hover:bg-blue-400 hover:border-blue-400 active:translate-y-px",
   secondary:
-    "border border-slate-700 bg-slate-900 text-slate-100 hover:border-slate-600 hover:bg-slate-800",
+    "border border-slate-700 bg-slate-900 text-slate-100 hover:border-slate-600 hover:bg-slate-800 active:translate-y-px",
   ghost:
-    "border border-transparent bg-transparent text-slate-300 hover:border-slate-800 hover:bg-slate-900 hover:text-slate-100",
+    "border border-transparent bg-transparent text-slate-300 hover:border-slate-800 hover:bg-slate-900 hover:text-slate-100 active:translate-y-px",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -40,7 +40,7 @@ const sizeClasses: Record<ButtonSize, string> = {
 
 function sharedClassName(variant: ButtonVariant, size: ButtonSize, className?: string) {
   return cn(
-    "inline-flex items-center justify-center rounded-xl font-medium transition focus:outline-none focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:opacity-70",
+    "inline-flex items-center justify-center rounded-xl font-medium transition duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500/10 disabled:cursor-not-allowed disabled:opacity-70",
     variantClasses[variant],
     sizeClasses[size],
     className
@@ -52,13 +52,16 @@ export function Button(props: ButtonProps) {
   const size = props.size ?? "md";
 
   if ("href" in props && props.href) {
-    const linkProps = { ...props };
-    delete linkProps.variant;
-    delete linkProps.size;
-    delete linkProps.className;
-    delete linkProps.children;
-
-    const { href, children, className } = props;
+    const {
+      href,
+      children,
+      className,
+      variant: linkVariant,
+      size: linkSize,
+      ...linkProps
+    } = props as ButtonAsLink;
+    void linkVariant;
+    void linkSize;
     return (
       <Link
         href={href}
@@ -70,16 +73,20 @@ export function Button(props: ButtonProps) {
     );
   }
 
-  const buttonProps = { ...props };
-  delete buttonProps.variant;
-  delete buttonProps.size;
-  delete buttonProps.className;
-  delete buttonProps.children;
+  const {
+    children,
+    className,
+    type,
+    variant: buttonVariant,
+    size: buttonSize,
+    ...buttonProps
+  } = props as ButtonAsButton;
+  void buttonVariant;
+  void buttonSize;
 
-  const { children, className, type = "button" } = props;
   return (
     <button
-      type={type}
+      type={type ?? "button"}
       className={sharedClassName(variant, size, className)}
       {...buttonProps}
     >

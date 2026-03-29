@@ -1,13 +1,23 @@
 import type { LawRecord } from "@/lib/mock-data";
+import { ActionChecklist } from "@/components/laws/ActionChecklist";
+import { Badge } from "@/components/ui/Badge";
 import { RiskBadge } from "@/components/ui/RiskBadge";
 import { Card } from "@/components/ui/Card";
 import { InsetPanel } from "@/components/ui/InsetPanel";
 
 type LawDetailPanelProps = {
   law: LawRecord;
+  applicabilityExplanation: string;
 };
 
-export function LawDetailPanel({ law }: LawDetailPanelProps) {
+export function LawDetailPanel({ law, applicabilityExplanation }: LawDetailPanelProps) {
+  const affectedWorkflows =
+    law.affectedWorkflows.length > 0 ? law.affectedWorkflows : ["Not provided"];
+  const requiredActions =
+    law.requiredActions.length > 0 ? law.requiredActions : [];
+  const timeline = law.timeline.length > 0 ? law.timeline : [];
+  const notes = law.notes && law.notes.length > 0 ? law.notes : [];
+
   return (
     <Card tone="primary" className="h-full p-0">
       <div className="border-b border-slate-800 px-6 py-6">
@@ -18,6 +28,9 @@ export function LawDetailPanel({ law }: LawDetailPanelProps) {
           <span className="rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
             {law.status}
           </span>
+          <Badge tone="blue" className="tracking-[0.16em]">
+            {law.enforcementStage}
+          </Badge>
           <RiskBadge risk={law.risk} />
         </div>
 
@@ -26,15 +39,78 @@ export function LawDetailPanel({ law }: LawDetailPanelProps) {
           <p className="mt-2 text-sm leading-6 text-slate-400">
             {law.category} regulation • {law.jurisdiction}
           </p>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            Source reference: {law.sourceLabel} • Responsible team: {law.ownerTeam}
+          </p>
         </div>
       </div>
 
       <div className="space-y-8 px-6 py-6">
+        <section className="grid gap-4 sm:grid-cols-2">
+          <InsetPanel>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              Jurisdiction
+            </p>
+            <p className="mt-2 text-sm font-medium text-slate-100">{law.jurisdiction || "Not provided"}</p>
+          </InsetPanel>
+          <InsetPanel>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+              Effective Date
+            </p>
+            <p className="mt-2 text-sm font-medium text-slate-100">{law.effectiveDate || "Unavailable"}</p>
+          </InsetPanel>
+        </section>
+
         <section className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-            Summary
+            Regulation Summary
           </p>
-          <p className="text-sm leading-7 text-slate-300">{law.description}</p>
+          <p className="text-sm leading-7 text-slate-300">{law.description || "Summary unavailable."}</p>
+        </section>
+
+        <section className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+            Why It Matters
+          </p>
+          <InsetPanel className="p-5">
+            <p className="text-sm leading-7 text-slate-200">{law.whyItMatters || "Why this matters has not been provided."}</p>
+          </InsetPanel>
+        </section>
+
+        <section className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+            Risk Rationale
+          </p>
+          <InsetPanel className="p-5">
+            <p className="text-sm leading-7 text-slate-300">{law.exposure.rationale || "Risk rationale unavailable."}</p>
+          </InsetPanel>
+        </section>
+
+        <section className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+            Why this applies to your company
+          </p>
+          <InsetPanel tone="blue" className="p-5">
+            <p className="text-sm leading-7 text-slate-200">
+              {applicabilityExplanation || "No company-specific applicability explanation is available for this regulation."}
+            </p>
+          </InsetPanel>
+        </section>
+
+        <section className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+            Affected Workflows
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {affectedWorkflows.map((workflow) => (
+              <span
+                key={workflow}
+                className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-1.5 text-xs font-medium uppercase tracking-[0.16em] text-slate-300"
+              >
+                {workflow}
+              </span>
+            ))}
+          </div>
         </section>
 
         <section className="rounded-2xl border border-red-500/20 bg-red-500/[0.07] p-5">
@@ -46,12 +122,14 @@ export function LawDetailPanel({ law }: LawDetailPanelProps) {
               {law.exposure.title}
             </p>
           </div>
-          <p className="mt-4 text-sm leading-7 text-slate-100">{law.exposure.body}</p>
+          <p className="mt-4 text-sm leading-7 text-slate-100">
+            {law.exposure.body || "Critical exposure details are unavailable."}
+          </p>
           <InsetPanel tone="red" className="mt-5 rounded-xl px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
               Penalty Exposure
             </p>
-            <p className="mt-2 text-sm font-medium text-red-200">{law.exposure.penalty}</p>
+            <p className="mt-2 text-sm font-medium text-red-200">{law.exposure.penalty || "Penalty exposure unavailable."}</p>
           </InsetPanel>
         </section>
 
@@ -61,46 +139,25 @@ export function LawDetailPanel({ law }: LawDetailPanelProps) {
               Required Actions
             </p>
             <span className="text-xs uppercase tracking-[0.18em] text-slate-500">
-              {law.requiredActions.length} items
+              {requiredActions.length} items
             </span>
           </div>
 
-          <div className="space-y-3">
-            {law.requiredActions.map((action) => (
-              <InsetPanel key={action.title} className="flex gap-3 px-4 py-4">
-                <span
-                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border ${
-                    action.status === "complete"
-                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                      : "border-slate-700 bg-slate-900 text-transparent"
-                  }`}
-                >
-                  <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 fill-none stroke-current stroke-[2.2]">
-                    <path d="M3.5 8.4 6.6 11.5 12.5 5.3" />
-                  </svg>
-                </span>
-                <div>
-                  <p
-                    className={`text-sm font-medium ${
-                      action.status === "complete"
-                        ? "text-slate-500 line-through"
-                        : "text-slate-100"
-                    }`}
-                  >
-                    {action.title}
-                  </p>
-                  <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-500">
-                    {action.article} • {action.due}
-                  </p>
-                  </div>
-              </InsetPanel>
-            ))}
-          </div>
+          {requiredActions.length > 0 ? (
+            <ActionChecklist actions={requiredActions} />
+          ) : (
+            <InsetPanel>
+              <p className="text-sm font-semibold text-slate-100">No actions specified</p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                The current data source did not return required actions for this regulation.
+              </p>
+            </InsetPanel>
+          )}
         </section>
 
         <section className="space-y-4">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
-            Timeline & Metadata
+            Enforcement Timeline and Metadata
           </p>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -108,20 +165,36 @@ export function LawDetailPanel({ law }: LawDetailPanelProps) {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                 Effective Date
               </p>
-              <p className="mt-2 text-sm font-medium text-slate-100">{law.effectiveDate}</p>
+              <p className="mt-2 text-sm font-medium text-slate-100">{law.effectiveDate || "Unavailable"}</p>
             </InsetPanel>
             <InsetPanel>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                 Enforcement Status
               </p>
-              <p className="mt-2 text-sm font-medium text-slate-100">{law.enforcementStatus}</p>
+              <p className="mt-2 text-sm font-medium text-slate-100">{law.enforcementStatus || "Pending classification"}</p>
             </InsetPanel>
           </div>
 
+          {notes.length > 0 ? (
+            <InsetPanel className="p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Regulatory Notes
+              </p>
+              <ul className="mt-3 space-y-3 text-sm leading-7 text-slate-300">
+                {notes.map((note) => (
+                  <li key={note} className="flex gap-3">
+                    <span className="mt-[10px] h-1.5 w-1.5 rounded-full bg-sky-400" />
+                    <span>{note}</span>
+                  </li>
+                ))}
+              </ul>
+            </InsetPanel>
+          ) : null}
+
           <div className="space-y-4">
-            {law.timeline.map((item, index) => (
+            {timeline.length > 0 ? timeline.map((item, index) => (
               <div key={`${item.date}-${item.label}`} className="relative flex gap-4">
-                {index !== law.timeline.length - 1 ? (
+                {index !== timeline.length - 1 ? (
                   <span className="absolute left-[11px] top-7 h-10 w-px bg-slate-800" />
                 ) : null}
                 <span className="mt-1 h-6 w-6 rounded-full border border-sky-500/25 bg-sky-500/10" />
@@ -131,7 +204,14 @@ export function LawDetailPanel({ law }: LawDetailPanelProps) {
                   <p className="mt-2 text-sm leading-6 text-slate-400">{item.detail}</p>
                 </div>
               </div>
-            ))}
+            )) : (
+              <InsetPanel>
+                <p className="text-sm font-semibold text-slate-100">Timeline unavailable</p>
+                <p className="mt-2 text-sm leading-6 text-slate-400">
+                  No enforcement timeline is currently available for this regulation.
+                </p>
+              </InsetPanel>
+            )}
           </div>
         </section>
       </div>

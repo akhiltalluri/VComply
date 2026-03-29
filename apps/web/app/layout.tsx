@@ -14,8 +14,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full">
-      <body className="min-h-full bg-[#050b18] text-slate-100 antialiased">
-        <div className="min-h-screen bg-[#050b18]">
+      <body className="min-h-full bg-slate-950 text-slate-100 antialiased">
+        <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,165,233,0.06),_transparent_28%),linear-gradient(180deg,_rgba(2,6,23,0.98)_0%,_rgba(2,6,23,1)_100%)]">
           <AppHeader />
           <main className="pb-16">{children}</main>
         </div>

@@ -4,11 +4,12 @@
 
 :root {
   --foreground: #f8fafc;
-  --background: #050b18;
+  --background: #020617;
 }
 
 html {
   color-scheme: dark;
+  scroll-behavior: smooth;
 }
 
 * {
@@ -20,6 +21,7 @@ body {
   background: var(--background);
   font-feature-settings: "ss01" on, "ss03" on, "cv01" on;
   line-height: 1.5;
+  text-rendering: optimizeLegibility;
 }
 
 a,
@@ -28,6 +30,12 @@ input,
 textarea,
 select {
   -webkit-tap-highlight-color: transparent;
+}
+
+a,
+button {
+  transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease,
+    box-shadow 180ms ease, transform 180ms ease;
 }
 
 ::selection {

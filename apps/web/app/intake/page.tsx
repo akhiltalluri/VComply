@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { IntakeSidebarProgress } from "@/components/intake/IntakeSidebarProgress";
@@ -14,7 +14,13 @@ import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { TextArea } from "@/components/ui/TextArea";
-import { modelCategories } from "@/lib/mock-data";
+import { checkApplicability, getApiErrorMessage } from "@/lib/api";
+import {
+  createAssessmentFromIntake,
+  modelCategories,
+  normalizeComplianceAssessment,
+} from "@/lib/mock-data";
+import type { IntakeDraft } from "@/lib/mock-data";
 
 const steps = [
   {
@@ -22,48 +28,38 @@ const steps = [
     title: "Company Profile",
     subtitle: "Business footprint and operating context",
     description:
-      "Establish the company baseline VComply will use to map jurisdictions, industry context, and likely regulatory scope.",
+      "Establish the operating footprint VComply will use to assess jurisdictional exposure, sector expectations, and likely regulatory scope.",
+    guidance:
+      "We use this information to determine which jurisdictions, sector expectations, and baseline regulatory obligations may apply.",
   },
   {
     id: "usage",
-    title: "AI Usage",
+    title: "AI Systems and Use Cases",
     subtitle: "Deployments, systems, and affected workflows",
     description:
-      "Capture how AI is used operationally so the assessment can distinguish routine automation from consequential decision systems.",
+      "Describe how AI is used in production so the assessment can distinguish routine automation from consequential decision systems.",
+    guidance:
+      "This tells VComply which systems may trigger hiring, profiling, transparency, or governance obligations.",
   },
   {
     id: "risk",
     title: "Risk Context",
-    subtitle: "Sensitive workflows and data provenance",
+    subtitle: "Sensitive workflows, data sources, and control context",
     description:
-      "Add the higher-sensitivity details that usually determine whether a deployment falls into heightened regulatory review.",
+      "Add the details that usually determine whether a deployment falls into heightened regulatory review, including sensitive workflows and data sourcing.",
+    guidance:
+      "These details help distinguish routine automation from higher-risk deployments that require deeper compliance controls.",
   },
   {
     id: "review",
-    title: "Review",
-    subtitle: "Confirm details before running assessment",
+    title: "Assessment Review",
+    subtitle: "Confirm assessment inputs before analysis",
     description:
-      "Review the submitted information before generating the initial compliance assessment and recommended next steps.",
+      "Confirm the submitted information before VComply generates the initial regulatory assessment and recommended actions.",
+    guidance:
+      "Review the inputs below before VComply generates the initial assessment, impacted regulations, and required actions.",
   },
 ];
-
-const mockResult = {
-  risk_score: 84,
-  applicable_laws: [
-    {
-      law: "NYC Local Law 144",
-      risk: "HIGH" as const,
-      reason: "AI used in hiring in NY",
-      next_step: "Conduct an independent bias audit",
-    },
-    {
-      law: "Illinois AI Video Interview Act",
-      risk: "MEDIUM" as const,
-      reason: "AI-assisted hiring workflows may trigger notice requirements",
-      next_step: "Implement candidate notice and consent workflow",
-    },
-  ],
-};
 
 function formatDataProvenance(value: string) {
   if (value === "first-party") {
@@ -81,11 +77,29 @@ function formatDataProvenance(value: string) {
   return value;
 }
 
+function parseStoredDataProvenance(value: string) {
+  if (value === "First-party enterprise datasets") {
+    return "first-party";
+  }
+
+  if (value === "Licensed third-party corpora") {
+    return "licensed";
+  }
+
+  if (value === "Public web and open datasets") {
+    return "public";
+  }
+
+  return value;
+}
+
 export default function IntakePage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [showValidation, setShowValidation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState("");
+  const [draftReady, setDraftReady] = useState(false);
 
   const [companyName, setCompanyName] = useState("");
   const [industry, setIndustry] = useState("");
@@ -107,6 +121,89 @@ export default function IntakePage() {
     [selectedCategories]
   );
 
+  const intakeSnapshot = useMemo<IntakeDraft>(
+    () => ({
+      company_name: companyName,
+      industry,
+      states_of_operation: statesOfOperation,
+      ai_use_cases: aiUseCases,
+      uses_ai_in_hiring: usesAiInHiring,
+      selected_categories: selectedCategories,
+      critical_use_cases: criticalUseCases,
+      data_provenance: formatDataProvenance(dataProvenance),
+      additional_context: additionalContext,
+    }),
+    [
+      additionalContext,
+      aiUseCases,
+      companyName,
+      criticalUseCases,
+      dataProvenance,
+      industry,
+      selectedCategories,
+      statesOfOperation,
+      usesAiInHiring,
+    ]
+  );
+
+  const previewAssessment = useMemo(
+    () => createAssessmentFromIntake(intakeSnapshot),
+    [intakeSnapshot]
+  );
+
+  useEffect(() => {
+    try {
+      const storedDraft = localStorage.getItem("complianceIntakeDraft");
+
+      if (!storedDraft) {
+        setDraftReady(true);
+        return;
+      }
+
+      const parsed = JSON.parse(storedDraft) as Partial<IntakeDraft>;
+
+      setCompanyName(typeof parsed.company_name === "string" ? parsed.company_name : "");
+      setIndustry(typeof parsed.industry === "string" ? parsed.industry : "");
+      setStatesOfOperation(
+        typeof parsed.states_of_operation === "string" && parsed.states_of_operation.trim()
+          ? parsed.states_of_operation
+          : "NY, CA"
+      );
+      setAiUseCases(
+        typeof parsed.ai_use_cases === "string" && parsed.ai_use_cases.trim()
+          ? parsed.ai_use_cases
+          : "hiring, candidate screening"
+      );
+      setUsesAiInHiring(
+        typeof parsed.uses_ai_in_hiring === "boolean" ? parsed.uses_ai_in_hiring : true
+      );
+      setSelectedCategories(
+        Array.isArray(parsed.selected_categories) && parsed.selected_categories.length > 0
+          ? parsed.selected_categories.filter((item): item is string => typeof item === "string")
+          : ["llm", "predictive"]
+      );
+      setCriticalUseCases(typeof parsed.critical_use_cases === "string" ? parsed.critical_use_cases : "");
+      setDataProvenance(
+        typeof parsed.data_provenance === "string"
+          ? parseStoredDataProvenance(parsed.data_provenance)
+          : ""
+      );
+      setAdditionalContext(typeof parsed.additional_context === "string" ? parsed.additional_context : "");
+    } catch {
+      localStorage.removeItem("complianceIntakeDraft");
+    } finally {
+      setDraftReady(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!draftReady) {
+      return;
+    }
+
+    localStorage.setItem("complianceIntakeDraft", JSON.stringify(intakeSnapshot));
+  }, [draftReady, intakeSnapshot]);
+
   const requiresCriticalUseCase = usesAiInHiring || selectedCategories.includes("predictive");
 
   function toggleCategory(id: string) {
@@ -119,7 +216,7 @@ export default function IntakePage() {
     if (stepNumber === 1) {
       return {
         companyName: companyName.trim() ? "" : "Enter the company name.",
-        industry: industry.trim() ? "" : "Specify the company industry.",
+        industry: industry.trim() ? "" : "Specify the primary industry context.",
         statesOfOperation: statesOfOperation.trim()
           ? ""
           : "List at least one operating jurisdiction.",
@@ -130,7 +227,7 @@ export default function IntakePage() {
       return {
         aiUseCases: aiUseCases.trim() ? "" : "Describe the AI use cases in scope.",
         categories:
-          selectedCategories.length > 0 ? "" : "Select at least one model or system category.",
+          selectedCategories.length > 0 ? "" : "Select at least one system category in scope.",
       };
     }
 
@@ -140,7 +237,7 @@ export default function IntakePage() {
           !requiresCriticalUseCase || criticalUseCases.trim()
             ? ""
             : "Add context for sensitive or high-impact workflows.",
-        dataProvenance: dataProvenance ? "" : "Select the primary data source origin.",
+        dataProvenance: dataProvenance ? "" : "Select the primary training or fine-tuning data source.",
       };
     }
 
@@ -152,6 +249,7 @@ export default function IntakePage() {
 
   function goToPreviousStep() {
     setShowValidation(false);
+    setSubmissionError("");
 
     if (currentStep === 1) {
       router.push("/");
@@ -168,7 +266,44 @@ export default function IntakePage() {
     }
 
     setShowValidation(false);
+    setSubmissionError("");
     setCurrentStep((step) => Math.min(steps.length, step + 1));
+  }
+
+  async function submitAssessment() {
+    if (isSubmitting) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmissionError("");
+
+    try {
+      localStorage.setItem("complianceIntakeDraft", JSON.stringify(intakeSnapshot));
+
+      const response = await checkApplicability({
+        states: statesOfOperation
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        uses_hiring_ai: usesAiInHiring,
+      });
+
+      const normalizedAssessment = normalizeComplianceAssessment(response, intakeSnapshot);
+
+      if (!normalizedAssessment) {
+        throw new Error("Invalid assessment response");
+      }
+
+      localStorage.setItem("complianceResult", JSON.stringify(normalizedAssessment));
+      localStorage.setItem("complianceIntakeDraft", JSON.stringify(intakeSnapshot));
+      router.push("/dashboard");
+    } catch (error) {
+      setSubmissionError(
+        getApiErrorMessage(error, "Unable to generate compliance assessment")
+      );
+      setIsSubmitting(false);
+    }
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -179,24 +314,12 @@ export default function IntakePage() {
       return;
     }
 
-    setIsSubmitting(true);
+    await submitAssessment();
+  }
 
-    const intakeSnapshot = {
-      company_name: companyName,
-      industry,
-      states_of_operation: statesOfOperation,
-      ai_use_cases: aiUseCases,
-      uses_ai_in_hiring: usesAiInHiring,
-      selected_categories: selectedCategoryTitles,
-      critical_use_cases: criticalUseCases,
-      data_provenance: formatDataProvenance(dataProvenance),
-      additional_context: additionalContext,
-    };
-
-    localStorage.setItem("complianceResult", JSON.stringify(mockResult));
+  function loadDemoAssessment() {
     localStorage.setItem("complianceIntakeDraft", JSON.stringify(intakeSnapshot));
-
-    await new Promise((resolve) => setTimeout(resolve, 700));
+    localStorage.setItem("complianceResult", JSON.stringify(previewAssessment));
     router.push("/dashboard");
   }
 
@@ -215,6 +338,7 @@ export default function IntakePage() {
               step={currentStep}
               title={currentStepConfig.title}
               description={currentStepConfig.description}
+              guidance={currentStepConfig.guidance}
             />
 
             <form onSubmit={handleSubmit} className="mt-10 space-y-8">
@@ -226,7 +350,7 @@ export default function IntakePage() {
                         <FormField
                           label="Company Name"
                           htmlFor="company-name"
-                          helperText="Use the legal or operating name that best represents the assessed entity."
+                          helperText="Use the legal or operating name for the entity being assessed."
                           error={showValidation ? stepErrors.companyName : ""}
                         >
                           <Input
@@ -241,7 +365,7 @@ export default function IntakePage() {
                       <FormField
                         label="Industry"
                         htmlFor="industry"
-                        helperText="This helps align your assessment to sector-specific AI scrutiny."
+                        helperText="Industry context helps VComply infer sector-specific regulatory scrutiny."
                         error={showValidation ? stepErrors.industry : ""}
                       >
                         <Input
@@ -255,7 +379,7 @@ export default function IntakePage() {
                       <FormField
                         label="States of Operation"
                         htmlFor="states"
-                        helperText="Comma-separated is fine for now, for example NY, CA, IL."
+                        helperText="List the U.S. states or jurisdictions where the assessed entity operates, for example NY, CA, IL."
                         error={showValidation ? stepErrors.statesOfOperation : ""}
                       >
                         <Input
@@ -274,9 +398,9 @@ export default function IntakePage() {
                 <div className="space-y-6">
                   <Card tone="subtle" className="space-y-6 p-6">
                     <FormField
-                      label="AI Use Cases"
+                      label="AI Systems and Use Cases"
                       htmlFor="ai-use-cases"
-                      helperText="Describe the main workflows or functions where AI is used today."
+                      helperText="Describe the business workflows where AI is currently used so the assessment can infer likely regulatory triggers."
                       error={showValidation ? stepErrors.aiUseCases : ""}
                     >
                       <Input
@@ -290,17 +414,17 @@ export default function IntakePage() {
                     <CheckboxField
                       checked={usesAiInHiring}
                       onChange={(event) => setUsesAiInHiring(event.target.checked)}
-                      label="Uses AI in hiring"
-                      description="Enable this if AI informs candidate screening, scoring, interview review, or other employment-related decisions."
+                      label="AI is used in employment-related decisions"
+                      description="Enable this if AI informs candidate screening, scoring, interview review, promotion, or other employment-related decisions."
                     />
                   </Card>
 
                   <Card tone="subtle" className="p-6">
                     <div className="space-y-4">
                       <div>
-                        <p className="text-sm font-medium text-slate-200">Model or system categories</p>
+                        <p className="text-sm font-medium text-slate-200">System categories in scope</p>
                         <p className="mt-1 text-sm leading-6 text-slate-500">
-                          Select the categories that best describe the deployed systems in scope.
+                          Select the categories that best describe the systems covered by this assessment.
                         </p>
                       </div>
 
@@ -330,7 +454,7 @@ export default function IntakePage() {
                     <FormField
                       label="Critical Use Cases"
                       htmlFor="critical-use-cases"
-                      helperText="Document any hiring, profiling, law-enforcement, or other high-impact workflows that merit closer compliance scrutiny."
+                      helperText="Document any hiring, profiling, law-enforcement, or other high-impact workflows that require closer regulatory review."
                       error={showValidation ? stepErrors.criticalUseCases : ""}
                     >
                       <TextArea
@@ -346,7 +470,7 @@ export default function IntakePage() {
                     <FormField
                       label="Data Provenance"
                       htmlFor="data-provenance"
-                      helperText="Choose the primary source of training or fine-tuning data used by the assessed systems."
+                      helperText="Identify the primary source of training or fine-tuning data used by the systems in scope."
                       error={showValidation ? stepErrors.dataProvenance : ""}
                     >
                       <Select
@@ -372,7 +496,7 @@ export default function IntakePage() {
                     <FormField
                       label="Additional Context"
                       htmlFor="additional-context"
-                      helperText="Optional notes about vendors, deployment scope, or internal governance that may affect interpretation."
+                      helperText="Optional notes about vendors, deployment scope, human review, or governance controls that may affect the assessment."
                     >
                       <TextArea
                         id="additional-context"
@@ -396,7 +520,37 @@ export default function IntakePage() {
                   criticalUseCases={criticalUseCases}
                   dataProvenance={formatDataProvenance(dataProvenance)}
                   additionalContext={additionalContext}
+                  previewAssessment={previewAssessment}
                 />
+              ) : null}
+
+              {submissionError ? (
+                <Card tone="secondary" className="border-red-500/20 bg-red-500/[0.07] p-5">
+                  <p className="text-sm font-medium text-red-200">{submissionError}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">
+                    Your assessment inputs are still saved locally. You can retry generation or open
+                    a demo-safe preview based on the current intake.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSubmissionError("");
+                        void submitAssessment();
+                      }}
+                      className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-medium text-slate-100 transition hover:border-slate-600 hover:bg-slate-800"
+                    >
+                      Try Again
+                    </button>
+                    <button
+                      type="button"
+                      onClick={loadDemoAssessment}
+                      className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-2 text-sm font-medium text-blue-200 transition hover:bg-blue-500/15"
+                    >
+                      Open Demo Assessment
+                    </button>
+                  </div>
+                </Card>
               ) : null}
 
               <StepNavigation

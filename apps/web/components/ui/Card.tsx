@@ -1,8 +1,7 @@
+import type { HTMLAttributes } from "react";
 import { cn } from "@/lib/cn";
 
-type CardProps = {
-  children: React.ReactNode;
-  className?: string;
+type CardProps = HTMLAttributes<HTMLDivElement> & {
   tone?: "primary" | "secondary" | "subtle";
 };
 
@@ -12,9 +11,12 @@ const toneClasses: Record<NonNullable<CardProps["tone"]>, string> = {
   subtle: "border-slate-800 bg-white/[0.03] shadow-[0_20px_60px_rgba(2,6,23,0.18)]",
 };
 
-export function Card({ children, className, tone = "primary" }: CardProps) {
+export function Card({ children, className, tone = "primary", ...props }: CardProps) {
   return (
-    <div className={cn("rounded-2xl border p-6", toneClasses[tone], className)}>
+    <div
+      className={cn("rounded-2xl border p-6 backdrop-blur-[1px]", toneClasses[tone], className)}
+      {...props}
+    >
       {children}
     </div>
   );

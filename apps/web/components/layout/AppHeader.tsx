@@ -22,11 +22,11 @@ export function AppHeader() {
 
   if (isAssessment) {
     return (
-      <header className="border-b border-white/8 bg-[#071124]">
+      <header className="border-b border-white/8 bg-slate-950/92 backdrop-blur-xl">
         <PageContainer className="flex items-center py-6">
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-3 text-lg text-slate-500 transition hover:text-slate-200"
+            className="inline-flex items-center gap-3 text-base text-slate-500 transition hover:text-slate-200 sm:text-lg"
           >
             <ArrowLeftIcon />
             <span>Back to Dashboard</span>
@@ -38,25 +38,27 @@ export function AppHeader() {
 
   if (isLanding) {
     return (
-      <header className="sticky top-0 z-40 border-b border-white/8 bg-[#071124]/92 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-white/8 bg-slate-950/92 backdrop-blur-xl">
         <PageContainer className="flex items-center justify-between py-4">
           <Link href="/" className="inline-flex items-center gap-4">
             <BrandMark />
-            <span className="text-[2rem] font-semibold tracking-tight text-white">VComply</span>
+            <span className="text-[1.55rem] font-semibold tracking-tight text-white sm:text-[2rem]">
+              VComply
+            </span>
           </Link>
 
-          <div className="flex items-center gap-4 text-lg">
-            <nav className="hidden items-center gap-12 text-slate-400 md:flex">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <nav className="hidden items-center gap-10 text-slate-400 md:flex">
               <a href="#features" className="transition hover:text-white">
-                Features
+                Capabilities
               </a>
-              <a href="#pricing" className="transition hover:text-white">
-                Pricing
+              <a href="#workflow" className="transition hover:text-white">
+                Workflow
+              </a>
+              <a href="#preview" className="transition hover:text-white">
+                Platform
               </a>
             </nav>
-            <Button href="/dashboard" variant="secondary" size="md">
-              Log In
-            </Button>
             <Button href="/intake" variant="primary" size="md">
               Start Assessment
             </Button>
@@ -73,14 +75,16 @@ export function AppHeader() {
   ];
 
   return (
-    <header className="sticky top-0 z-40 border-b border-white/8 bg-[#071124]/92 backdrop-blur-xl">
-      <PageContainer className="flex items-center justify-between py-4">
-        <Link href="/" className="inline-flex items-center gap-4">
-          <BrandMark />
-          <span className="text-[2rem] font-semibold tracking-tight text-white">VComply</span>
-        </Link>
+    <header className="sticky top-0 z-40 border-b border-white/8 bg-slate-950/92 backdrop-blur-xl">
+        <PageContainer className="flex items-center justify-between py-4">
+          <Link href="/" className="inline-flex items-center gap-4">
+            <BrandMark />
+            <span className="text-[1.55rem] font-semibold tracking-tight text-white sm:text-[2rem]">
+              VComply
+            </span>
+          </Link>
 
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-4 sm:gap-8">
           <nav className="hidden items-center gap-10 text-lg text-slate-500 md:flex">
             {appNavigation.map((item) => {
               return (
@@ -94,7 +98,7 @@ export function AppHeader() {
             })}
           </nav>
 
-          <Button href="/intake" variant="primary" size="md" className="text-lg">
+          <Button href="/intake" variant="primary" size="md" className="text-sm sm:text-lg">
             New Assessment
           </Button>
         </div>

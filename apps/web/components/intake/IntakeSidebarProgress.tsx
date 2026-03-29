@@ -55,7 +55,7 @@ export function IntakeSidebarProgress({
           <BrandMark />
           <div>
             <p className="text-[1.8rem] font-semibold tracking-tight text-white">VComply</p>
-            <p className="text-sm text-slate-400">AI compliance assessment</p>
+            <p className="text-sm text-slate-400">AI regulatory assessment</p>
           </div>
         </div>
 
@@ -64,8 +64,7 @@ export function IntakeSidebarProgress({
             Assessment Progress
           </p>
           <p className="text-sm leading-6 text-slate-400">
-            Complete the workflow to map your AI footprint to applicable regulations and
-            recommended next steps.
+            Complete the intake to map your AI footprint to impacted regulations and the actions most likely to be required.
           </p>
         </div>
 
@@ -107,11 +106,10 @@ export function IntakeSidebarProgress({
 
       <Card tone="secondary" className="border-amber-500/20 bg-amber-500/[0.06] p-5">
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-amber-300">
-          Why this matters
+          Why this input matters
         </p>
         <p className="mt-3 text-sm leading-7 text-slate-300">
-          Accurate deployment context is what lets VComply distinguish routine AI usage from
-          workflows that create meaningful regulatory exposure.
+          Accurate deployment context is what allows VComply to distinguish routine automation from workflows that create meaningful regulatory exposure.
         </p>
       </Card>
     </aside>
