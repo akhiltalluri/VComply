@@ -2,113 +2,103 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { NavLink } from "@/components/layout/NavLink";
+import { BrandMark } from "@/components/ui/BrandMark";
+import { Button } from "@/components/ui/Button";
 
-type NavigationItem = {
-  href: string;
-  label: string;
-};
-
-type AppHeaderProps = {
-  navigation: NavigationItem[];
-};
-
-const routeThemes: Record<
-  string,
-  {
-    nav: string;
-    navHover: string;
-    rail: string;
-  }
-> = {
-  "/": {
-    nav: "bg-blue-500/10 text-blue-400",
-    navHover: "hover:bg-blue-500/10 hover:text-blue-300",
-    rail: "from-blue-500/70 via-blue-400/40 to-transparent",
-  },
-  "/intake": {
-    nav: "bg-blue-500/10 text-blue-400",
-    navHover: "hover:bg-blue-500/10 hover:text-blue-300",
-    rail: "from-blue-500/70 via-blue-400/40 to-transparent",
-  },
-  "/dashboard": {
-    nav: "bg-blue-500/10 text-blue-400",
-    navHover: "hover:bg-blue-500/10 hover:text-blue-300",
-    rail: "from-blue-500/70 via-blue-400/40 to-transparent",
-  },
-  "/laws": {
-    nav: "bg-blue-500/10 text-blue-400",
-    navHover: "hover:bg-blue-500/10 hover:text-blue-300",
-    rail: "from-blue-500/70 via-blue-400/40 to-transparent",
-  },
-};
-
-function getTheme(pathname: string) {
-  if (pathname.startsWith("/intake")) {
-    return routeThemes["/intake"];
-  }
-
-  if (pathname.startsWith("/dashboard")) {
-    return routeThemes["/dashboard"];
-  }
-
-  if (pathname.startsWith("/laws")) {
-    return routeThemes["/laws"];
-  }
-
-  return routeThemes["/"];
+function ArrowLeftIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-5 w-5 fill-none stroke-current stroke-[1.8]">
+      <path d="M7 3 2 8l5 5M3 8h11" />
+    </svg>
+  );
 }
 
-function isActive(pathname: string, href: string) {
-  if (href === "/") {
-    return pathname === "/";
-  }
-
-  return pathname.startsWith(href);
-}
-
-export function AppHeader({ navigation }: AppHeaderProps) {
+export function AppHeader() {
   const pathname = usePathname();
-  const theme = getTheme(pathname);
+  const isLanding = pathname === "/";
+  const isAssessment = pathname.startsWith("/intake");
+
+  if (isAssessment) {
+    return (
+      <header className="border-b border-white/8 bg-[#071124]">
+        <PageContainer className="flex items-center py-6">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-3 text-lg text-slate-500 transition hover:text-slate-200"
+          >
+            <ArrowLeftIcon />
+            <span>Back to Dashboard</span>
+          </Link>
+        </PageContainer>
+      </header>
+    );
+  }
+
+  if (isLanding) {
+    return (
+      <header className="sticky top-0 z-40 border-b border-white/8 bg-[#071124]/92 backdrop-blur-xl">
+        <PageContainer className="flex items-center justify-between py-4">
+          <Link href="/" className="inline-flex items-center gap-4">
+            <BrandMark />
+            <span className="text-[2rem] font-semibold tracking-tight text-white">VComply</span>
+          </Link>
+
+          <div className="flex items-center gap-4 text-lg">
+            <nav className="hidden items-center gap-12 text-slate-400 md:flex">
+              <a href="#features" className="transition hover:text-white">
+                Features
+              </a>
+              <a href="#pricing" className="transition hover:text-white">
+                Pricing
+              </a>
+            </nav>
+            <Button href="/dashboard" variant="secondary" size="md">
+              Log In
+            </Button>
+            <Button href="/intake" variant="primary" size="md">
+              Start Assessment
+            </Button>
+          </div>
+        </PageContainer>
+      </header>
+    );
+  }
+
+  const appNavigation = [
+    { href: "/dashboard", label: "Dashboard" },
+    { href: "/intake", label: "Intake" },
+    { href: "/laws", label: "Laws Explorer" },
+  ];
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/88 backdrop-blur-xl">
-      <div className={`h-px w-full bg-gradient-to-r ${theme.rail}`} />
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-        <div className="min-w-0">
-          <Link
-            href="/"
-            className="inline-flex items-center text-lg font-semibold tracking-tight text-slate-100 transition hover:text-blue-400"
-          >
-            VComply
-          </Link>
-          <p className="mt-1 text-sm text-slate-400">
-            Real-Time AI Compliance Intelligence
-          </p>
+    <header className="sticky top-0 z-40 border-b border-white/8 bg-[#071124]/92 backdrop-blur-xl">
+      <PageContainer className="flex items-center justify-between py-4">
+        <Link href="/" className="inline-flex items-center gap-4">
+          <BrandMark />
+          <span className="text-[2rem] font-semibold tracking-tight text-white">VComply</span>
+        </Link>
+
+        <div className="flex items-center gap-8">
+          <nav className="hidden items-center gap-10 text-lg text-slate-500 md:flex">
+            {appNavigation.map((item) => {
+              return (
+                <NavLink
+                  key={item.href}
+                  href={item.href}
+                  label={item.label}
+                  active={pathname.startsWith(item.href)}
+                />
+              );
+            })}
+          </nav>
+
+          <Button href="/intake" variant="primary" size="md" className="text-lg">
+            New Assessment
+          </Button>
         </div>
-
-        <nav
-          aria-label="Primary"
-          className="flex items-center gap-2 overflow-x-auto rounded-full border border-slate-800 bg-slate-900/80 p-1.5 shadow-[0_10px_30px_rgba(2,6,23,0.35)]"
-        >
-          {navigation.map((item) => {
-            const active = isActive(pathname, item.href);
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                  active
-                    ? theme.nav
-                    : `text-slate-300 hover:bg-slate-800 hover:text-slate-100 ${theme.navHover}`
-                }`}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
+      </PageContainer>
     </header>
   );
 }
